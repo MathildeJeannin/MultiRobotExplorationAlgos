@@ -50,8 +50,13 @@ mutable struct Robot{D} <: AbstractAgent
     vis_range::Int
     com_range::Int
     isObstacle::Bool
-    plans::Union{Nothing, Vector{Robot_plan}}
+    # plans::Union{Nothing, Vector{Robot_plan}}
     rollout_info::Union{Nothing, Rollout_info}
     state::Union{Nothing, mdp_state}
     planner::Union{Nothing, DPWPlanner}
 end
+
+
+# mutable struct KosarajuGraph
+#     nodes::MMatrix
+# end
