@@ -1,0 +1,219 @@
+Centralised Simulateur
+
+    I. Assumptions
+
+    
+
+    
+    III. Idées 
+
+
+
+        A. Profiler 
+
+    pbm = getindex (MDP.jl ligne 85) appelé trop de fois et trop long
+    Comment faire pour update la gridmap sans utiliser getindex
+
+    Utilisation tuple au lieu de Array = Bien mieux parce qu'un Tuple est statique. pbm = tuple est statique. cmt update la gridmap ? 
+
+
+
+        B. Outils pratiques
+
+    BenchmarkTools.jl --> @btime + @benchmark ou @benchmarkable
+    ProfileView.jl
+
+
+
+        C. A faire : 
+
+    IDEE : 
+    se parler quand il y a eu beaucoup d'info nouvelles
+
+    robot.plan = tous les plans de tous les robots
+    robot.best_plan = le meilleur plan pour chaque robot, quand on utilise le meilleur plan pour le robot i dans la focntion transition, on supprime le premier element de sa sequence (= l'action qu'on vient de simuler pour i). Avant chaque rollout on remet une sequence pour chaque robot. 
+    En l'absence de nouvelles infos du robot j, on laisse le robot j a sa derniere position connue et deroule ses actions dans les rollouts comme s'il n'avait pas bougé ? 
+
+
+
+    DEC MCTS: 
+    - on garde l'arbre d'avant et on deroule le MCTS en utilisant notre connaissance sur les trajectoires des autres robots
+    - on selectionne dans l'arbre les N noeuds les + prometteurs : 
+
+        for i in 1:10
+            m = maximum(all_q)
+            indexes[i] = findall(item->item==m, r.planner.tree.q)[1]
+            deleteat!(all_q, findall(item->item==m, all_q)[1])
+       end
+
+       variante de ça avec un while length(indexes) < 10 et en verifiant que l'action choisie ammene a une feuille de l'arbre ? 
+    - on met a jour qn -> qn(x) = 0 si x ne fait parti des N noeuds et qn = ... sinon (cf dec mcts)
+    - on communique 
+    - on choisit l'action telle que xr = argmax[qnr(xr)] sur X_hat nr 
+
+
+    Questions:
+    - comment on choisit hat_X ? on prend les N feuilles les plus prometteuses et leurs parents ? Les noeuds les plus prometteurs et leurs parents quittent à avoir une séquence d'actions courtes ? 
+
+        Apres tests : si on choisit par exemple l'index de l'action qui donne la meilleure reward de l'arbre, on peut remonter jusqu'a s_index = 1 mais il y a plusieurs trajets possibles (cf MDP.jl -> find_sequences)
+            avec ses sequences on peut redescendre dans l'arbre en utilisant les sequences trouvées mais en choisissant à chaque fois l'action qui a la meilleure reward
+            David -> pas trop de sens avec mon calcul de reward = delta de cellules decouvertes
+        OU 
+            on peut descendre dans l'arbre directement en choisissant les meilleures rewards a chaque fois sans se restreindre aux sequences trouvees avant.  
+            David -> faire comme ca
+
+
+        /!\ Probleme : Quand on choisit les sequences d'actions prometteuses hat_X, si l'etat suivant une action n'est pas deterministe mais qu'il est généré aléatoirement par l'algo, comment on choisit une sequence d'action qui ne dépende pas trop de cet aléatoire ? 
+            - est ce qu'on regarde toutes les actions de tous les états possibles et on choisit la meilleure action en moyenne ? 
+                -> state_best_average_action
+                faire un dictionnaire par nom d'action et mettre dans le dictionnaire la moyenne par action, on determine la meilleure action a en moyenne et on choisit concretement l'etat qui donne l'action a avec la meilleure recompense
+            - est ce qu'on prend un état au hasard et on choisit la meilleure action qui suit cette état ? 
+                -> random_state_best_action
+            - état qui a la meilleure action suivante
+                -> state_best_action
+            - état qui a la pire action suivante > 0 
+                -> state_worst_positive_action
+
+
+        Est-ce qu'on garde une sequence d'action deja incluse dans une autre ? a priori non 
+
+
+    - comment on reutilise hat_X a l'etape suivante ? Est-ce qu'on garde l'arbre tel quel en utilisant keep_tree ou est qu'on recree un arbre a la main avec seulement les sequences de hat_X ? Sinon garde l'arbre tel quel et on met tous les Q et N à 0 
+        --> NON PAS SUR : l'arbre et hat_X ne sont PAS LA MÊME CHOSE
+
+
+
+    1/ Metriques
+        - combien de coups pour visiter N% pour de la carte
+        - OU en N coups combien de %age de la carte j'ai visité ? 
+
+        (- Aire commune entre les robots) -> distance suffisante
+        - Distance entre 2 robots (A*/euclidienne)
+        - gridmap des vues -> mettre dans properties model qui est deja en variable globale avec une matrice ou chaque element est un vector de nb_robots booleens
+
+        - quantité d'info communiquée ? 
+            -> nombre de communication/distance euclidienne
+
+        -> mediane moyenne ecart type
+
+        - rliable :
+            - performance profile
+        - Detecting Causalty in complex ecosytems ?
+
+    2/ Comportement à mesurer 
+        - même jeux de param que pour simulateur centralisé
+        - impact du nombre de séquence en mémoire
+        - manière de calculer les proba
+        - manière de choisir les meilleures sequences
+        - plusieurs itérations de simualtion VS 1 seule simulation (impact communication)
+        - plusieurs rayons de communication 
+
+
+    3/ Resultats
+        - même jeux de param -> comportement inverse pour exploration_constant, normal car dans la version centralisée les états générés étaient générés aléatoirement alors que dans la version decsentralisée les états générés sont déterministes. Donc avec une grande exploration_constant on force l'algo à privilégier systématiquement l'état qui a été le moins vue et qui n'a propablement pas la meilleure récompense.
+                             -> nb_iterations = même comportement pour les 2, ie 500 = opti et au delà moins bon
+                             -> depth = plus elle est grande mieux c'est mais l'intérêt est limité au delà de 50 car 100 implique beaucoup plus de calcul
+                             -> discount = bizarre, à tester en croisé avec depth  
+    
+
+
+        D. Details pratiques/remarques: 
+
+    Reward: elle est appelée et sommée à chaque étape du rollout. 
+    /!\ discount factor ! expe --> discount = 0.8
+
+    But de la reward : prendre en compte le nombre de nouvelle cellule mais penaliser si un robot n'a rien decouvert. /!\ pbm = trouver une fonction telle que penaliser parce qu'un robot n'a rien decouvert soit quand meme une meilleure solution que decouvrir que 3 cellules
+    --> UCB = Q + c*sqrt(log(t/N)) donc si reward > 1 tout le temps on va preferer la reward
+
+    reuse tree --> peut etre reinitialiser uniquement N et Q pour les actions car pour l'instant elles sont re utilisées alors que les actions dépendent de l'état précédent
+
+
+    Simulations: 
+        k_state = 1 à 20 ne fait pas une grande différence, essayer avec des valeurs bien plus grandes + sa valeur par defaut doit etre neutre (=1) 
+        alpha_state = essayer des valeurs entre 0 et 1 et quelques valeurs entre 1 et 10 
+
+    
+    Besoin de mettre pos dans Robot_plan parce qu'on a besoin de modifier les positions des autres robots pendant le mdp sans toucher aux positions reelles
+    	donc derniere pos reelle dans les plans et pos simulée dans l'état du mdp 
+    		Sauf que : besoin que chaque robot soit représenté dans l'état du mdp -> ok
+
+    /!\ Erreur Package MCTS:
+        depth n'est pas automatiquement utilisé. La fonction estimate_value qui permet de faire les rollout va utiliser un paramètre max_depth qui vaut par défaut 50. Il faut mettre ce paramètre à -1 pour que estimate_value utilise comme max_depth le paramètre depth qu'on met en entrée de la fonction DPWSolver 
+        Donc dans DPWSolver mettre en paramètre : estimate_value = RolloutEstimator(RandomSolver(rng), max_depth=-1) 
+
+    
+
+
+    IV. Journal 
+
+        Semaine du 11 mars:
+
+    trouver bug : les etats n'etaient pas egaux dans l'arbre donc il ne descendait jamais apres l'etage 1 
+
+        Semaine du 18 mars: 
+
+    Parler en réu du problème évoquer plus haut (partie DEC MCTS - Questions - comment choisir hat_X)
+
+        Semaine du 25 mars:
+
+    on a besoin de calculer la reward pour toutes les sequences d'actions possibles. On a besoin de recoder la fonction transition pour calculer les sequences d'action des autres robots d'abord puis celle de notre robot + garder en memoire l'interet de notre robot seul = nbre de cellules decouvertes uniquement par lui = g(xr U x(r)) - g(xr_vide U x(r)) -->  NON car fr(x) est calculée par rapport à l'entièreté de la séquence d'action et non pas entre chaque "vague" d'actions. Donc ce qu'on veut c'est la différence entre 2 gridmaps : celle ou tous les robots sauf Ri ont bougé et celle ou tout le monde a bougé. Et c'est cette reward qui normalement est remonté dans l'arbre. Sauf que notre package calcule la reward en cours de route et pas qu'à la fin du rollout (= depth atteint ou état terminal). Est ce qu'on recode la reward, ou est ce qu'on la garde telle qu'elle et on calcule une reward différente pour la phase update distribution --> NON 
+    + Dans le cas ou on veut une reward sur une séquence complète, est-ce qu'on calcule la différence entre gridmap ou tous les robots ont bougé sauf Ri et gridmap ou tous les robots ont bougé, ie le nombre de cellules découvertes uniquement par Ri. Ou est-ce qu'on veut la somme des cellules découvertes uniquement par Ri au cours de la séquence -> ie les cellules potentiellement revues par d'autres robots après Ri, qui nullifient donc l'action précédente de Ri. 
+
+    Il faut que cette fonction reward soit accessible en dehors des rollouts pour avoir la reward dans l'update des distributions. Sauf que la reward ne peut etre calculer que pendant la transition, parce que le reward telle qu'elle est codée est calulée en fonction l'état précédent, l'état suivant et l'action. Sauf que ça ne suffit pas dans notre cas car on veut la différence entre l'état sans l'action du robot et l'état suivant, ce qui est différent. 
+
+    pour le robot i 
+    fonction appelée dans transition pour qui prend en argument la gridmap de l'état considéré du robot i, les positions de tous les robots, les actions de tous les robots
+
+    Est-ce qu'on inclut dans les noeuds de notre arbre les actions des autres robots ? je dirais que non parce qu'on veut l'impact de nos actions, pas celles des autres. On va créer un arbre et ne pas le réutiliser, et cet arbre sera biaisé par les actions des autres robots. Mais pas grave ? 
+    Et même si on ne les met pas dans les noeuds actions de l'arbre (ie un noeud = un vecteur d'action comme dans la version centralisée) est ce qu'on utilise la séquence d'action à partir de la racine, ou est ce qu'on l'utilise à partir du noeud ou on commence le rollout ? 2eme version + facile d'un point de vue code parce qu'on peut supprimer l'action faite de le séquence d'action et il suffit de prendre le 1er élément de la liste à chaque fois + le fait que si on déroule les actions des robots avec lesquels on a pas communiqué depuis longtemps, la séquence d'action utilisée n'est de toute façon pas dans la bonne temporalité. 
+
+    On sample une séquence d'action pour les robots != Ri avant un rollout. Donc on déroule bien la séquence d'action à partir du noeud ou on commence les rollouts. Mais comment on sample une sequence d'action de hat_X_(r) juste entre l'ajout d'un nouveau noeud et un rollout ? 
+    --> on peut regarder tree.N(s) = 0. Si oui, on commence les rollouts et variable rollout=true (par exemple), et on sample les sequences d'actions. Si tree.N(s) > 0 alors on se balade dans la partie connue de l'arbre et on utilise pas les sequences d'actions ? Si car logique par rapport a l'etat qui inclut la position des autres robots que la sequence d'action commence en fait a la racine et pas au rollout. 
+
+    Ligne 110 a 122 résumé + conclusions réunions : 
+ 
+    utiliser les actions des autres robots dès la racine de l'abre et mettre leurs positions dans l'abre quitte à créer beaucoup d'états + quand on arrive au bout de leur séquence d'actions les faire bouger aléatoirement. 
+
+    Reward : calculée à la fin du rollout uniquement. On ajoute à la gridmap si la cellule a été vue uniquement par moi. Reward = ce nombre. 
+    + la reward doit etre calculable à l'extérieur du MCTS 
+    
+    Choix sequence d'action -> transition action/etat -> tester avec pire des cas, meilleur des cas et moyenne ? 
+
+    Synchroniser les robots = tout le monde calcule et communique dans la même phase et tout le monde bouge dans la phase suivante
+
+    Fonctions à modifier : 
+        - agent_step! -> synchroniser les robots sur 2 phases : 1 phase communication + calcul et 1 phase mouvement. 
+        - fonction reward : detecter si on est a la fin du rollout (depth ou etat terminal ?) et calculer la reward uniquement à ce moment là
+        - ajout qui a vu quoi dans gridmap : on veut savoir si telle cellule a été vue uniquement par le robot qui calcule. Il faut remettre à 0 cette gridmap à chaque vraie action ? 
+
+
+    semaine du 13 mai : 
+        trouver bug : pas d'egalité possible entre les plans (manquait @struct_hash_equal)
+        A révélé que état racine de l'arbre = état ou les meilleurs plans dans l'état du robot sont vides, puis on remplit les plans après le 1er rollout. Donc l'état initial après le 2eme rollout a changé n'est plus le même que l'état initial du tout début. On choisit donc systématiquement les meilleurs plans des autres robots au début de la transition si on est bien en début de rollout.
+
+
+    Il faut synchroniser les suites d'evenements:
+        - pour quelques iterations
+            - les robots simulent
+            - ils communiquent les resultats de leurs simulations
+        - ils bougent 
+
+        car pour l'instant le problème c'est qu'ils font des plans, partagent leurs plans les plus probables puis bougent ce qui rend les plans partagés caducs 
+
+
+    V. Doc MCTS.jl
+
+    tree : 
+    total_n[i] = nbre de fois qu'a été vu le i-eme état 
+    children[i] = les enfants (actions) du i-eme etat 
+    s_labels[i] = donne le nom s du i-eme etat 
+    s_lookup[s] = donne l'indice i de l'etat s
+
+    n[i] = nbre de fois qu'a ete vu la i-eme action
+    q[i] = donne la recompense moyenne de la i-eme action
+    transitions[i] = donne pour chaque fois que l'action a ete vue, un tuple (indice etat enfant, reward de cette action uniquement)
+    a_labels[i] = donne le nom a de la i-eme action
+    a_lookup[a] = donne l'indice i de l'action a 
+
+    n_a_children[?] ??
+    unique_transitions[?] ?? 

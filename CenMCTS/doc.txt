@@ -1,0 +1,333 @@
+Centralised Simulateur
+
+    I. Assumptions
+
+    gridmap:
+        - info: -3 unknown, -2 obstacle, -1 robot, 0 free
+        - update: tous d'un coup (boucle for un par un)
+        - extent: 20x20 ?
+    obstacles:
+        - nombre d'obstacle connu et utilisé pour calculer la proba d'en rencontrer un dans le mdp 
+        - positions aleatoires
+    robot:
+        - position: pas discrete
+        - vis range: 2/3 ? 
+        - nombre: 2/3 ? 
+        - begin zone: 5x5 en bas a gauche
+        - agent_step (synchronicité): 
+            * tous les robots d'un coup ou non ? 
+            * 
+        - memoire de la trajectoire (collective et/ou individuelle): aucune pour l'instant 
+        - scan: chaque robot scan, update sa gridmap puis 1 action collective. 
+    MDP:
+        - state: vecteur qui contient la liste des positions des robots + la gridmap
+        - action: 
+            * 1 action collective
+                si chaque robot a 9 possibilités (en utilisant limit_scan) alors nb_robot^9
+            * 1 action par robot
+                
+        - transition: 
+            selon la gridmap actuelle (ou simulée) dans le scan complet autour des robots (du robot ?) 
+                * si -3 --> proba qu'il y ait soit un obstacle, soit un robot, soit rien 
+                * si -2 --> Pas de proba, la case reste un obstacle donc on prend pas en compte une precedente erreur
+                * si -1 --> il y avait un robot donc soit libre soit toujours un robot
+                * si 0 --> proba qu'il y ait un robot
+
+        - reward: 
+            * on compte les passages de -3 a une autre valeur (ie les nouvelles cellules)
+            * -1 sinon
+            /!\ dec mcts dit qu'il faut avoir un reward entre 0 et 1 ? a verifier
+
+        - discount factor: 1
+
+    sensor: 
+        - scan ne voit pas les obstacles, les fonctions scan n'utilisent pas le model ou la gridmap
+
+    
+    Algo: 
+        - initialisation du modele (placement des robots) 
+        - placement des obstacles
+        - creation figure
+        - initialisation mdp
+        - boucle:
+            - agent_step:
+                - update gridmap:
+                    - scan 
+                    - update gridmap selon scan
+                - action = planner mcts
+
+    
+
+    II. Doc
+
+        A. Figure.jl
+
+    1 function: 
+    - initialise figure(observ map list, oberv pos list)
+    observ map list = Observable of the gridmap (Matrix{Int8})
+    observ pos list = Observable  of the list (Array) of the typle of id and position of the robots Tuple{Int64,Tuple{Float64, Float64}}
+
+    Creates the heatmap, the polygons for each robots and places them using the Observable of the positions and creates the colorbar. 
+
+
+
+
+
+
+        B. MDP.jl
+1 struct + 4 functions + 4 variables (variables from POMDPs.jl library)
+    
+    - Struct RobotMDP <: MDP{Any, Any}
+        gridmap::Matrix{Int8}
+        pos_list::Vector{Tuple{Int64, Tuple{Float64, Float64}}}
+        vis_range::Int64
+        nb_obstacle::Int64
+
+    - actions = ??
+    - stateindex
+    - actionindex
+    - discount = Float64
+    - function transition(m::robotMDP, s, a)
+        s = actual state
+        a = choosen action
+
+        return the state depending on the action
+
+    - function reward(s, a, sp)
+        s = previous state
+        a = action
+        sp = resulting state
+
+        return the reward (Float64)
+
+        Est appelée à chaque étape du rollout, donc tout le temps
+
+    - function possible_action(s, vis_range, extent)
+        s = actual state 
+        vis_range = Float64
+        extent = Tuple(Float64,Float64)
+
+        uses limit_scan to compute all cells that are empty at the end of its vision. 
+        return a list of actions Array{Tuple{Int64, Vector{Any}}}(undef, length(pos_list))
+
+        /!\ NOT USED /!\
+
+    - function compute_actions(m::robotMDP)
+
+        compute all possible actions
+        return an iterator over all the actions possible
+
+
+
+
+
+        C. Sensor.jl
+4 functions
+
+    - function scan(pos, extent, vis_range)
+        pos = NTuple(2, Float64)
+        extent = NTuple(2, Float64)
+        vis_range = Float64
+
+        uses limit_scan and completes the list with the interior cells
+        return an array of all the positions within vision range of the robot (type not defined ([] + push)) 
+
+        /!\ #TODO DO NOT TAKE INTO ACCOUNT THE OBSTACLE /!\
+
+    - function limit_scan(pos, extent, vis_range, nb_tranche)
+        pos = NTuple(2, Float64)
+        extent = NTuple(2, Float64)
+        vis_range = Float64
+        nb_tranche = Float64
+
+        divides a circle of radius vis_range around the robot in nb_tranche parts and computes all the different coordinates on this circle (eliminate the duplicates) 
+
+        /!\ #TODO DO NOT TAKE INTO ACCOUNT THE OBSTACLE /!\
+
+
+    - function gridmap_update(model, robot, gridmap)
+        model = model (cf initialize_model in Robot.jl)
+        robot = robot (cf struct Robot in Robot.jl)
+        gridmap = Matrix{Int8}
+
+        uses function scan to get all positions around the robot and update the gridmap according to what is at each position using the model (model contains obstacles poses)
+
+        return the gridmap updated
+
+
+    - function _print_scan(scan_list, extent)
+        not relevant, help to code
+
+
+
+
+
+        D. Robot.jl
+
+5 functions + 1 struct 
+
+    - struct Robot{D}  #(D = dimension, usually 2)
+        id = Int8
+        pos = NTuple{D,Float64}
+        vel = NTuple{D,Float64} 
+        vis_range = Float64
+        com_range = Float64
+        alive = Bool
+        isObstacle = Bool
+
+    - initialize_model(;
+        N = 3,                 # number of agents
+        extent = (20.0,20.0),  # size of the world
+        begin_zone = (3,1),    # beinning zone for robots
+        vis_range = 2.0,       # visibility range
+        com_range = 2.0,       # communication range
+        delta t = 0.01,        # time step of the model
+        seed = 1               # random seed
+        )
+
+    model = AgentBasedModel
+    ContinuousSpace
+    Scheduler.fastest
+
+    Initialise the model with the rng, randomly places the robots in the begin zone 
+
+    
+    - agents_step!(model, gridmap, planner, state)
+        model = agents.jl model
+        gridmap = Matrix{Int8}
+        planner = planner from MCTS 
+        state = mdp state 
+
+    update the gridmap and uses the MCTS to chose an action 
+    
+
+
+
+        E. Run.jl
+
+    no function
+    creates the model
+    add the obstacles
+    create and update the figure
+    initialise the mdp
+    iterate each step
+
+
+
+
+        F. All variables and their types (alphabetical order)
+
+        a ou action::Vector{action_robot}
+
+        struct pos_robot
+            id::Int8
+            pos::Tuple{Float64, Float64}
+        end
+
+
+        struct mdp_state 
+            pos_list::Vector{pos_robot}
+            gridmap::Matrix{Int8}
+        end
+
+
+        struct action_robot
+            id::Int8
+            action::Int8
+        end
+
+
+        struct robotMDP <: MDP{mdp_state, Vector{action_robot}}
+            gridmap::Matrix{Int8}
+            pos_list::Vector{pos_robot}
+            vis_range::Int64
+            nb_obstacle::Int64
+        end
+
+
+        gridmap::Matrix{Int8}
+        mdp::robotMDP<:MDP
+        nb_obstacle::Int64
+        observ_map::Observable{Matrix{Int8}}
+        observ_pos_list::Vector{Observable}
+        pos_list::Vector{Tuple{Int64, Tuple{Float64, Float64}}}
+        s ou  state::mdp_state
+        vis_range::Int64
+
+
+
+
+    III. Idées 
+
+
+
+        A. Profiler 
+
+    pbm = getindex (MDP.jl ligne 85) appelé trop de fois et trop long
+    Comment faire pour update la gridmap sans utiliser getindex
+
+    Utilisation tuple au lieu de Array = Bien mieux parce qu'un Tuple est statique. pbm = tuple est statique. cmt update la gridmap ? 
+
+
+
+        B. Outils pratiques
+
+    BenchmarkTools.jl --> @btime + @benchmark ou @benchmarkable
+    ProfileView.jl
+
+
+
+        C. A faire : 
+
+    IHM : 
+    - variables = alpha_state, k_state, max_time, keep_tree, nb_steps, nb_obstacle, nb_robots
+    - boutons = lancer, arreter simu, mcts_visualisation
+
+    Amelio : 
+    - trouver pourquoi reuse tree reutilise mal les valeurs de l'arbre precedent 
+
+
+
+        D. Details pratiques/remarques: 
+
+    Reward: elle est appelée et sommée à chaque étape du rollout. 
+    /!\ discount factor ! expe --> discount = 0.8
+
+    But de la reward : prendre en compte le nombre de nouvelle cellule mais penaliser si un robot n'a rien decouvert. /!\ pbm = trouver une fonction telle que penaliser parce qu'un robot n'a rien decouvert soit quand meme une meilleure solution que decouvrir que 3 cellules
+    --> UCB = Q + c*sqrt(log(t/N)) donc si reward > 1 tout le temps on va preferer la reward
+
+    reuse tree --> peut etre reinitialiser uniquement N et Q pour les actions car pour l'instant elles sont re utilisées alors que les actions dépendent de l'état précédent
+
+
+    GROS PROBLEME
+        -> quand mcts tombe sur un etat deja vu, il ne s'em rend pas compte
+        la fonction haskey(tree.s_lookup, sp) devrait permettre de dire si sp est deja dans l'arbre mais n'est jamais vrai
+        Doc julia dit que struct A == struct B -> false
+
+        Gros probleme est resolu :  https://juliapackages.com/p/structequality
+
+
+    Simulations: 
+        k_state = 1 à 20 ne fait pas une grande différence, essayer avec des valeurs bien plus grandes + sa valeur par defaut doit etre neutre (=1) 
+        alpha_state = essayer des valeurs entre 0 et 1 et quelques valeurs entre 1 et 10 
+
+ 
+
+    IV. Journal 
+
+        Semaine du 15 janvier: 
+
+    tests de parametres avec en general 10 runs par parametre, un parametre a la fois (cf expe plus haut) + modif reward pour prendre en compte le fait que chaque robot doit decouvrir quelque chose
+
+        Semaine du 21 janvier:
+
+    changer la reward pour nb_discovered_cells
+
+        Semaine du 29 janvier : 
+    
+    tout fonctionne correctement a priori. Keep_tree fonctionne bien. si on descend dans l'arbre on voit les actions choisies et les états rencontrés. Quand l'arbre est réutilisé il repart bien du noeud ou il est actuellement. 
+
+
+        Semaine du 4 mars: 
+    
+    Gros probleme = si l'etat est deja present dans l'arbre, tous les noeuds qui correspondent a cet etat partagent les memes N et Q et sont tous incrementés. Çe explique pourquoi les résultats sont mieux avec une discount très faible. Ça ne se voit bien que dans le cas ou il y a un seul robot et pas d'obstacle car il est très probable dans ce cas là de tomber plusieurs sur le même état (robot qui reste à la même position). 
