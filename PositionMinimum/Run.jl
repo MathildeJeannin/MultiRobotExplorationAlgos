@@ -64,7 +64,7 @@ function run(;
         global f = initialise_figure(observ_map, observ_pos_list, observ_traj_list)
     
     end
-     
+    
     nb_steps = 0
     max_knowledge = 0
 
@@ -90,6 +90,8 @@ function run(;
                 observ_traj_list[robot.id][] = push!(observ_traj_list[robot.id][], Point2f(robot.pos))
                 observ_map[robot.id][] = robot.gridmap
             end
+
+            sleep(0.5)
 
             
         end

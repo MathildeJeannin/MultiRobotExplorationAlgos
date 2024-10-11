@@ -65,12 +65,3 @@ function exchange_positions!(r1::RobotPosMin, r2::RobotPosMin)
     r1.all_robots_pos[r2.id] = r2.pos
     r2.all_robots_pos[r1.id] = r1.pos
 end
-
-function exchange_frontiers!(r1::RobotPosMin, r2::RobotPosMin)
-    for cell in r2.frontiers
-        push!(r1.frontiers, cell)
-    end
-    for cell in r1.frontiers
-        push!(r2.frontiers, cell)
-    end
-end

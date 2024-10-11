@@ -75,10 +75,9 @@ mutable struct RobotPosMin{D} <: AbstractAgent
     vis_range::Int
     com_range::Int
     gridmap::MMatrix
-    frontiers::Set
-    visited::Set
     all_robots_pos::Vector
     pathfinder::Any
+    plan::Vector
 end
 
 

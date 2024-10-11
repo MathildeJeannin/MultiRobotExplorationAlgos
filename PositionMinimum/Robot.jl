@@ -72,7 +72,7 @@ function initialize_model(
         end
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        agent = RobotPosMin{D}(id, pos, vis_range, com_range, gridmap_n, Set(), Set(), [(1,1) for i in 1:nb_robots], pathfinder)
+        agent = RobotPosMin{D}(id, pos, vis_range, com_range, gridmap_n, [(1,1) for i in 1:nb_robots], pathfinder, [])
         add_agent!(agent, pos, model)
     end
 
@@ -123,39 +123,91 @@ function agent_step!(robot, model)
     extent = size(robot.gridmap)
     nb_robots = abmproperties(model).nb_robots
 
+    println("robot $(robot.id)")
+
     if count(x->x == -2, robot.gridmap) >= abmproperties(model).invisible_cells
+
+        println("communicating ...")
 
         in_range = nearby_robots(robot, model, robot.com_range)
         for r in in_range
             exchange_positions!(robot, r)
             merge_gridmaps!(robot,r)
-            exchange_frontiers!(robot, r)
+        end
+
+
+        if isempty(robot.plan)
+
+            println("computing frontiers")
+            all_frontiers = frontierDetection(robot.pos, robot.gridmap)
+            goal = positionMinimum(all_frontiers, robot.gridmap, robot.all_robots_pos[Not(robot.id)], robot.pos)
+            robot.plan = collect(plan_route!(robot, goal, robot.pathfinder))
         end
 
         scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
 
-        all_frontiers, robot.frontiers, robot.visited = frontierDetection(robot.pos, scan, robot.gridmap, robot.frontiers, robot.visited)
-        goal = positionMinimum(all_frontiers, robot.gridmap, robot.all_robots_pos[Not(robot.id)], robot.pos)
+        println("computing new position ...")
+       
+        while !isempty(robot.plan) && robot.plan[1] in scan
+            action = (robot.plan[1][1]-robot.pos[1], robot.plan[1][2]-robot.pos[2])./distance(robot.plan[1], robot.pos)
 
-        route = plan_route!(robot, goal, robot.pathfinder)
-        action = (0,0)
-        if !isempty(route)
-            for cell in reverse(route)
-                if cell ∈ scan
-                    action = (cell[1]-robot.pos[1],cell[2]-robot.pos[2])./sqrt((cell[1]-robot.pos[1])^2 + (cell[2]-robot.pos[2])^2)
-                    break
-                end
-            end
+            new_pos, _ = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, 1, action)
+            move_agent!(robot, new_pos, model)
+            robot.all_robots_pos[robot.id] = new_pos
+            deleteat!(robot.plan,1)
         end
 
-        new_pos, _ = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, robot.vis_range, action)
-        robot.all_robots_pos[robot.id] = new_pos
-        move_agent!(robot, new_pos, model)
+        println("moving ...")
+
+        
+        
+        println("updating gridmap ...")
 
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
         gridmap_update!(robot.gridmap, 0, robot.id, robot.all_robots_pos, robot.vis_range, obstacles_pos, model)
-        
 
     end
 end
 
+
+# function defineAction(robot::RobotPosMin, scan::Vector)
+#     i = 0
+#     cells = []
+#     in_scan = true
+#     while in_scan && i < length(robot.plan)
+#         i+=1
+#         cell = robot.plan[i]
+#         if cell ∈ scan
+#             push!(cells, cell)
+#         else
+#             in_scan = false
+#         end
+#     end
+
+#     new_pos = (0,0)
+#     action = (0,0)
+#     prev_pos = robot.pos
+#     prev_action = (0,0)
+
+#     pos_ok = true
+#     k = 1
+
+#     while pos_ok && !isempty(cells)
+
+#         action = (cells[1][1]-robot.pos[1], cells[1][2]-robot.pos[2])./distance(cells[1], robot.pos)
+
+#         new_pos, _ = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, robot.vis_range, action)
+
+#         if new_pos == prev_pos
+#             pos_ok = false
+#         end 
+        
+#         deleteat!(robot.plan,1)
+#         deleteat!(cells, 1)
+
+#         prev_action = action
+
+#     end
+
+#     return prev_action
+# end
