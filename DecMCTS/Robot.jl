@@ -194,17 +194,12 @@ function agent_step!(robot, model, vis_tree)
         else
             a = rand(robot.planner.mdp.possible_actions)
         end
-
-        neighbours = [r for r in nearby_robots(robot, model, robot.vis_range)]    
-        robots_pos = Vector{Tuple{Int64,Int64}}(undef, nb_robots)
-        for (i,r) in enumerate(robots_pos)
-            if i in [n.id for n in neighbours]
-                robots_pos[i] = neighbours[findall(x->x.id==i, neighbours)][1].pos
-            elseif i == robot.id
-                robots_pos[i] = robot.pos
-            else
-                robots_pos[i] = (0,0)
-            end
+        
+        neighbours = collect(nearby_robots(robot, model, robot.vis_range))
+        robots_pos = repeat([(0,0)], outer = nb_robots)
+        robots_pos[robot.id] = robot.pos
+        for n in neighbours
+            robots_pos[n.id] = n.pos
         end
 
         new_pos,_ = compute_new_pos(robot.state.space_state.gridmap, robot.id, robots_pos, robot.vis_range, a)
@@ -221,7 +216,7 @@ function agent_step!(robot, model, vis_tree)
         robot.state.space_state.known_cells, robot.state.space_state.seen_cells = gridmap_update!(robot.state.space_state.gridmap, robot.state.space_state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.space_state.seen_cells)
 
         # if robot.state.nb_coups > 15
-            robot.state.space_state.known_cells += check_for_invisible_obstacles!(robot.state.space_state.gridmap)
+	# robot.state.space_state.known_cells += check_for_invisible_obstacles!(robot.state.space_state.gridmap)
         # end
 
         if vis_tree

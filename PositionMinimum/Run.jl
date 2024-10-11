@@ -1,82 +1,45 @@
-include("../Simulateur/Packages.jl")
-include("Types.jl")
+include("../src/Packages.jl")
+include("../src/Types.jl")
 include("Figure.jl")
 include("Robot.jl")
-include("../Simulateur/Maps.jl")
+include("../src/Maps.jl")
 include("Robot.jl")
-include("../Simulateur/Sensor.jl")
-include("../Simulateur/Communication.jl")
+include("../src/Sensor.jl")
+include("../src/Communication.jl")
+include("FrontierDetection.jl")
+include("PositionMinimum.jl")
 
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
-function run(; 
-    alpha_state = 1.0, 
-    k_state = 500.0, 
-    alpha_action = 1.0,
-    k_action = 1.0,
-    exploration_constant = 1.0, 
-    n_iterations = 500, 
-    keep_tree = false, 
-    discount = 0.85, 
+function run(;
     nb_obstacles = 0, 
     nb_robots = 3,
     extent = (15,15),
     vis_figure = false,
-    vis_tree = false,
-    depth = 50,
-    max_time = 60.0, 
-    show_progress = false,
     max_steps = 100,
     num_map = 2,
     com_range = 10,
-    fct_proba = compute_q,
-    fct_sequence = state_best_average_action,
-    nb_sequence = 3,
-    nb_communication = 1,
-    penalite = true,
     id_expe = 0
     )
-
-    global use_penalite = penalite
-
-    if typeof(fct_proba) == String
-        fct_proba = getfield(Main, Symbol(fct_proba))
-    end
-    if typeof(fct_sequence) == String
-        fct_sequence = getfield(Main, Symbol(fct_sequence))
-    end
 
     vis_range = 3
     invisible_cells = 0
     if num_map > 0 
-        f = open("/home/mathilde/Documents/These/Codes/SimulateurdecMCTS/maps/map$num_map.txt", "r")
+        f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
         line_triche = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = parse(Int64, line_triche)
-        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateurdecMCTS/maps/map$(num_map).txt") - 2
+        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
     end
 
     global model = initialize_model(
         nb_robots,
         extent,
         nb_obstacles,
-        num_map,
-        alpha_state, 
-        k_state,
-        alpha_action,
-        k_action, 
-        exploration_constant, 
-        n_iterations, 
-        keep_tree, 
-        discount, 
-        vis_figure,
-        vis_tree,
-        depth,
-        max_time, 
-        show_progress;
+        num_map;
         begin_zone = (1,1),
         vis_range = vis_range,    
         com_range = com_range,
@@ -89,26 +52,21 @@ function run(;
         observ_map = Array{Observable}(undef, nb_robots)
         observ_pos_list = Vector{Vector{Observable}}(undef,nb_robots)
         observ_traj_list = [Observable([Point2f(0.5,0.5)]) for i in 1:nb_robots]
-        global observ_best_sequences_list = Vector{Vector{Observable}}(undef, nb_robots)
         for (i,r) in enumerate(robots)
             id = r.id
             observ_pos_list[id] = Vector{Observable}(undef, nb_robots)
-            observ_map[id] = Observable(Matrix(robots[1].state.space_state.gridmap))
+            observ_map[id] = Observable(Matrix(robots[1].gridmap))
             push!(observ_traj_list[id][], Point2f(r.pos))
-            observ_best_sequences_list[id] = Vector{Observable}(undef, nb_robots)
             for i in 1:nb_robots
-                observ_pos_list[id][i] = Observable(r.plans[i].state.pos)
-                best_plan = Vector{action_robot}(undef, 0)
-                observ_best_sequences_list[id][i] = Observable(list_pos(r.state.space_state.gridmap, i, [p.state.pos for p in r.plans], r.vis_range, best_plan))
-
+                observ_pos_list[id][i] = Observable(robots[i].pos)
             end
         end
-        global f = initialise_figure(observ_map, observ_pos_list, observ_traj_list, com_range, observ_best_sequences_list)
+        global f = initialise_figure(observ_map, observ_pos_list, observ_traj_list)
     
     end
      
     nb_steps = 0
-    max_knowledge = maximum([r.state.space_state.known_cells for r in robots])
+    max_knowledge = 0
 
     walkmap = BitArray{2}(trues(extent))
     obs = [r.pos for r in collect(nearby_obstacles((1,1),model,100))]
@@ -118,64 +76,34 @@ function run(;
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
     # plan_route!(agent, pos, pathfinder)
 
-    while (max_knowledge != (extent[1]*extent[2])) && (nb_steps < max_steps)
+    while (max_knowledge != (extent[1]*extent[2]-abmproperties(model).invisible_cells)) && (nb_steps < max_steps)
         nb_steps += 1
 
-        
-        @threads for robot in robots 
-            agents_simulate!(robot, model, 0.01, 1-(nb_steps-1)/max_steps; fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, nb_communication = nb_communication)
-        end
-
-        # wait_for_key("press any key to continue")
-
         for robot in robots
-            
-            if vis_figure
-                for i in 1:nb_robots
-                    if !isempty(robot.plans[i].assigned_proba)
-                        best_seq_index = findall(item->item==maximum(robot.plans[i].assigned_proba), robot.plans[i].assigned_proba)[1]
-                        best_plan = robot.plans[i].best_sequences[best_seq_index]
-                        observ_best_sequences_list[robot.id][i][] = list_pos(robot.state.space_state.gridmap, i, [p.state.pos for p in robot.plans], robot.vis_range, best_plan)
-                    end
-                end
-            end
 
-            agent_step!(robot, model, vis_tree)
+            agent_step!(robot, model)
 
             if vis_figure
                 for i in 1:nb_robots
-                    observ_pos_list[robot.id][i][] = robot.plans[i].state.pos  
+                    observ_pos_list[robot.id][i][] = robot.all_robots_pos[i]  
                 end              
                 observ_traj_list[robot.id][] = push!(observ_traj_list[robot.id][], Point2f(robot.pos))
-                observ_map[robot.id][] = robot.state.space_state.gridmap
+                observ_map[robot.id][] = robot.gridmap
             end
 
             
         end
-        max_knowledge = maximum([r.state.space_state.known_cells for r in robots])
+        max_knowledge = maximum([count(x -> x != -2, r.gridmap) for r in robots])
 
         if id_expe!=0
-            add_metrics(model, pathfinder, id_expe;
-            alpha_state = alpha_state, 
-            k_state = k_state , 
-            alpha_action = alpha_action ,
-            k_action = k_action,
-            exploration_constant = exploration_constant, 
-            n_iterations = n_iterations, 
-            keep_tree = keep_tree, 
-            discount = discount, 
+            add_metrics(model, pathfinder, id_expe, nb_steps;
             nb_obstacles = nb_obstacles, 
             nb_robots = nb_robots,
             extent = extent,
-            depth = depth,
             max_time = max_time, 
             max_steps = max_steps,
             num_map = num_map,
-            com_range = com_range,
-            fct_proba = fct_proba,
-            fct_sequence = fct_sequence,
-            nb_sequence = nb_sequence,
-            nb_communication = nb_communication
+            com_range = com_range
             )
         end
 
@@ -184,28 +112,7 @@ function run(;
 end
 
 
-
-function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action_sequence::Vector{action_robot})
-    L = Vector{Tuple{Int,Int}}(undef, length(action_sequence)+1)
-    L[1] = robots_pos[id]
-    for (i,a) in enumerate(action_sequence)
-        pos,_ = compute_new_pos(gridmap, id, robots_pos, vis_range, a)
-        robots_pos[id] = pos
-        L[i+1] = pos
-    end
-    return L
-end
-
-
-function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_expe::Int;
-    alpha_state = 1.0, 
-    k_state = 500.0, 
-    alpha_action = 1.0,
-    k_action = 1.0,
-    exploration_constant = 1.0, 
-    n_iterations = 500, 
-    keep_tree = false, 
-    discount = 0.85, 
+function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_expe::Int, nb_step::Int;
     nb_obstacles = 0, 
     nb_robots = 3,
     extent = (15,15),
@@ -213,11 +120,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
     max_time = 60.0, 
     max_steps = 300,
     num_map = 2,
-    com_range = 10,
-    fct_proba = compute_q,
-    fct_sequence = state_best_average_action,
-    nb_sequence = 3,
-    nb_communication = 1
+    com_range = 10
     )
     robots = [model[i] for i in eachindex(model[1].plans)]
     extent = size(robots[1].state.space_state.gridmap)
@@ -227,7 +130,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
     euclidean_distances = zeros((length(robots), length(robots)))
     
     percent_of_map[end] = count(x->any(x), [abmproperties(model).seen_all_gridmap[i,j,:] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles)
-    df = DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_all" => percent_of_map[end])
+    df = DataFrame("nb_steps" => nb_step, "percent_of_map_all" => percent_of_map[end])
 
     for robot in robots
 
@@ -240,15 +143,14 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
             euclidean_distances[robot_prime.id, robot.id] = euclidean_distances[robot.id, robot_prime.id]
         end
 
-        df = innerjoin(df, DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_$(robot.id)" => percent_of_map[robot.id], "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]], "seen_gridmap_$(robot.id)" => [abmproperties(model).seen_all_gridmap[:,:,robot.id]]), on = "nb_steps")
+        # df = innerjoin(df, DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_$(robot.id)" => percent_of_map[robot.id], "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]], "seen_gridmap_$(robot.id)" => [abmproperties(model).seen_all_gridmap[:,:,robot.id]]), on = "nb_steps")
         
     end
 
-    write_header = false
-    if  robots[1].state.nb_coups == 1
-        write_header = true
-    end
-    CSV.write("Logs/nummap$(num_map)_extent$(extent1)$(extent2)/$(N).csv", df, delim = ';', header = write_header, append=true)
-
+    # write_header = false
+    # if  robots[1].nb_step == 1
+    #     write_header = true
+    # end
+    # CSV.write("Logs/nummap$(num_map)_extent$(extent1)$(extent2)/$(N).csv", df, delim = ';', header = write_header, append=true)
 
 end

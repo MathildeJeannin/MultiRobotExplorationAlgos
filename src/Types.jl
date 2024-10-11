@@ -44,19 +44,42 @@ mutable struct Rollout_info
 end
 
 
-mutable struct Robot{D} <: AbstractAgent
+mutable struct Obstacle{D} <: AbstractAgent
+    id::Int
+    pos::NTuple{D,Int}
+end
+
+
+mutable struct RobotCen{D} <: AbstractAgent
+    id::Int
+    pos::NTuple{D,Int}
+    vis_range::Int
+end
+
+
+mutable struct RobotDec{D} <: AbstractAgent
     id::Int
     pos::NTuple{D,Int}
     vis_range::Int
     com_range::Int
-    isObstacle::Bool
-    # plans::Union{Nothing, Vector{Robot_plan}}
+    plans::Union{Nothing, Vector{Robot_plan}}
     rollout_info::Union{Nothing, Rollout_info}
     state::Union{Nothing, mdp_state}
     planner::Union{Nothing, DPWPlanner}
 end
 
 
-# mutable struct KosarajuGraph
-#     nodes::MMatrix
-# end
+mutable struct RobotPosMin{D} <: AbstractAgent
+    id::Int
+    pos::NTuple{D,Int}
+    vis_range::Int
+    com_range::Int
+    gridmap::MMatrix
+    frontiers::Set
+    visited::Set
+    all_robots_pos::Vector
+    pathfinder::Any
+end
+
+
+Robot = Union{RobotCen,RobotDec,RobotPosMin}

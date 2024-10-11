@@ -1,13 +1,13 @@
 function add_map(model, map, nb_robots)
     D = 2
-    f = open("/home/mathilde/Documents/These/Codes/SimulateurdecMCTS/maps/map$map.txt", "r")
+    f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$map.txt", "r")
     id = nb_robots+1
     _ = readline(f)
     invisible_cells = parse(Int64, readline(f))
     for line in readlines(f)
         str_pos = split(line, "\t")
         pos = (parse(Int64, str_pos[1]),parse(Int64, str_pos[2]))
-        agent = Robot{D}(id, pos, 0, 0, true, nothing, nothing, nothing, nothing)
+        agent = Obstacle{D}(id, pos)
         add_agent!(agent, pos, model)
         id+=1
     end
