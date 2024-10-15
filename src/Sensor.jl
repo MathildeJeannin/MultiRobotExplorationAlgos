@@ -75,68 +75,43 @@ function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_p
     return known_cells, seen_cells
 end
 
-function is_surrounded(gridmap, pos)
+
+function compute_new_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action::Tuple; goal = nothing)
+    pos = robots_pos[id]
+    other_robots_pos = robots_pos[1:end .!= id, :]
+
     extent = size(gridmap)
-    already_seen = []
-    queue = []
 
-    function boucle(pos)
-        directions = [(-1,-1),(0,-1),(1,-1),(1,0),(1,1),(0,1),(-1,1),(-1,0)]
-        x,y = pos
-        surrounded = 0
-        extent = size(gridmap)
-
-        if !isempty(queue) && pos == queue[1]
-            filter!(x->x!=pos, queue)
-        end
-
-        for (dx,dy) in directions
-            nx = x+dx
-            ny = y+dy
-            if nx > extent[1] || ny > extent[2] || nx < 1 || ny < 1
-            elseif gridmap[nx,ny] == 0 
-                return false
-            elseif gridmap[nx,ny] == -1
-            elseif gridmap[nx,ny] == -2
-                if (nx,ny) ∉ already_seen
-                    push!(already_seen, (nx,ny))
-                    push!(queue, (nx,ny))
-                end
-            end
-        end
-
-        if isempty(queue) 
-            return true
-        end
-
-        return boucle(queue[1])
+    if !isnothing(goal) 
+        ray = raytracing(pos, goal, vis_range)
+    else
+        ray = raytracing(pos, (vis_range .* action) .+ pos, vis_range)
     end
+    x,y = ray[1][1],ray[1][2]
 
-    return boucle(pos), already_seen
+    visible_robots = nearby_robots(pos, model, vis_range)
 
-end
+    if length(ray)==1
+        return (x,y), (0,0)
+    
+    else
+        for element in ray[2:end]
+            x_prev, y_prev = x,y 
+            x,y = element
 
+            if (x > extent[1]) || (y > extent[2]) || (x < 1) || (y < 1)
+                return (x_prev, y_prev), (0,0)
+            end 
 
-function check_for_invisible_obstacles!(gridmap)
-    extent = size(gridmap)
-    output = 0
-    for i in 1:extent[1]
-        for j in 1:extent[2]
-            if gridmap[i,j] == -2
-                surrounded, obstacle = is_surrounded(gridmap, (i,j))
-                if surrounded
-                    output += length(obstacle)
-                    for pos in obstacle
-                        gridmap[pos[1],pos[2]] = -1
-                    end
-                end
-            end
+            if gridmap[x,y] == -1 
+                return (x_prev, y_prev), (x,y)
+            elseif (x,y) in other_robots_pos || (x,y) in visible_robots
+                return (x_prev,y_prev), (0,0)
+            end 
         end
     end
-    return output
+    return (x,y), (0,0)
 end
-
-
 
 
 function nearby_robots(pos::Tuple, model::ABM, r::Int)
@@ -154,7 +129,6 @@ end
 function nearby_obstacles(agent, model::ABM, r::Int)
     return nearby_obstacles(agent.pos, model, r)
 end
-
 
 
 function raytracing(A, B, length_AB)
@@ -175,6 +149,18 @@ function raytracing(A, B, length_AB)
     end
 
     return ray
+end
+
+
+function limitScanWithObstacles(robot::RobotPosMin, scan::Vector)
+    # scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
+    lscan = limit_scan(scan, robot.pos)
+    scan_accurate = Set()
+    for l in lscan
+        cell, _  = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, robot.vis_range, (0,0), goal = l)
+        push!(scan_accurate, cell)
+    end
+    return scan_accurate
 end
 
 
@@ -266,4 +252,67 @@ function _print_seen_gridmap(seen_gridmap)
         end
     end
     println("\n")
+end
+
+
+
+function is_surrounded(gridmap, pos)
+    extent = size(gridmap)
+    already_seen = []
+    queue = []
+
+    function boucle(pos)
+        directions = [(-1,-1),(0,-1),(1,-1),(1,0),(1,1),(0,1),(-1,1),(-1,0)]
+        x,y = pos
+        surrounded = 0
+        extent = size(gridmap)
+
+        if !isempty(queue) && pos == queue[1]
+            filter!(x->x!=pos, queue)
+        end
+
+        for (dx,dy) in directions
+            nx = x+dx
+            ny = y+dy
+            if nx > extent[1] || ny > extent[2] || nx < 1 || ny < 1
+            elseif gridmap[nx,ny] == 0 
+                return false
+            elseif gridmap[nx,ny] == -1
+            elseif gridmap[nx,ny] == -2
+                if (nx,ny) ∉ already_seen
+                    push!(already_seen, (nx,ny))
+                    push!(queue, (nx,ny))
+                end
+            end
+        end
+
+        if isempty(queue) 
+            return true
+        end
+
+        return boucle(queue[1])
+    end
+
+    return boucle(pos), already_seen
+
+end
+
+
+function check_for_invisible_obstacles!(gridmap)
+    extent = size(gridmap)
+    output = 0
+    for i in 1:extent[1]
+        for j in 1:extent[2]
+            if gridmap[i,j] == -2
+                surrounded, obstacle = is_surrounded(gridmap, (i,j))
+                if surrounded
+                    output += length(obstacle)
+                    for pos in obstacle
+                        gridmap[pos[1],pos[2]] = -1
+                    end
+                end
+            end
+        end
+    end
+    return output
 end

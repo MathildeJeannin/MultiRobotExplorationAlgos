@@ -36,16 +36,16 @@ function frontierCenter(frontier::Set)
     end
 
     best_cell = nothing
-    min_dist_sum = 0
+    min_dist_sum = 10000000
 
     for cell in frontier
         S = 0 
         for other_cell in frontier
             S += distance(cell, other_cell)
         end
-
-        if S > min_dist_sum
+        if S < min_dist_sum
             best_cell = cell
+            min_dist_sum = S
         end
     end
 
@@ -102,5 +102,6 @@ function positionMinimum(all_frontiers::Vector, gridmap::MMatrix, other_robots_p
     end
 
     frontier_center = frontierCenter(min_frontier)
-    return goToFrontier(frontier_center, pos, gridmap)
+    # return goToFrontier(frontier_center, pos, gridmap)
+    return frontier_center
 end

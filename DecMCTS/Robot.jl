@@ -43,7 +43,7 @@ function initialize_model(
         invisible_cells
     )
 
-    global model = AgentBasedModel(Robot{D}, space; agent_step!,
+    global model = AgentBasedModel(Union{RobotDec{D}, Obstacle{D}}, space; agent_step!,
         scheduler = scheduler, 
         properties = properties
     )
@@ -87,13 +87,11 @@ function initialize_model(
 
         mdp = robotMDP(vis_range, nb_obstacles, discount, possible_actions)
 
-        policy = myPolicy(mdp)
-
-        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(policy, max_depth=-1))
+        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
 
         planner = solve(solver, mdp)
 
-        agent = Robot{D}(id, pos, vis_range, com_range, isObstacle, [Robot_plan(robot_state(i, (1,1)), Vector{Vector{action_robot}}(undef, 0), Float64[]) for i in 1:nb_robots], Rollout_info(false, 0), state, planner)
+        agent = RobotDec{D}(id, pos, vis_range, com_range, [Robot_plan(robot_state(i, (1,1)), Vector{Vector{action_robot}}(undef, 0), Float64[]) for i in 1:nb_robots], Rollout_info(false, 0), state, planner)
         add_agent!(agent, pos, model)
     end
 

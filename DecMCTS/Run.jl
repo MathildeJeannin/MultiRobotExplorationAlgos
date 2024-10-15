@@ -1,5 +1,5 @@
 include("../src/Packages.jl")
-include("Types.jl")
+include("../src/Types.jl")
 include("Figure.jl")
 include("Robot.jl")
 include("MDP.jl")
@@ -52,14 +52,14 @@ function run(;
     vis_range = 3
     invisible_cells = 0
     if num_map > 0 
-        f = open("/home/mathilde/Documents/These/Codes/SimulateurdecMCTS/maps/map$num_map.txt", "r")
+        f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
         line_triche = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = parse(Int64, line_triche)
-        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateurdecMCTS/maps/map$(num_map).txt") - 2
+        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
     end
 
     global model = initialize_model(
@@ -121,7 +121,7 @@ function run(;
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
     # plan_route!(agent, pos, pathfinder)
 
-    while (max_knowledge != (extent[1]*extent[2])) && (nb_steps < max_steps)
+    while (max_knowledge != (extent[1]*extent[2]) - abmproperties(model).invisible_cells) && (nb_steps < max_steps)
         nb_steps += 1
 
         
@@ -183,7 +183,7 @@ function run(;
         end
 
     end        
-    return nb_steps
+    return nb_steps, abmproperties(model).seen_all_gridmap
 end
 
 function describe_robot(robot::Robot)
@@ -269,4 +269,30 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
     CSV.write("Logs/nummap$(num_map)_extent$(extent1)$(extent2)/$(N).csv", df, delim = ';', header = write_header, append=true)
 
 
+end
+
+
+function _print_coverage_map(coverage_map::BitArray)
+    x,y,nb_robots = size(coverage_map)
+    map = MMatrix{x,y}(zeros(x,y))
+
+    for i in 1:x
+        for j in 1:y
+            for r in 1:nb_robots
+                if coverage_map[i,j,r]
+                    map[i,j] += 1
+                end
+                obs = collect(agents_in_position((i,j), model))
+                if !isempty(obs) && typeof(obs[1]) == Obstacle{2}
+                    map[i,j] = -1
+                end
+            end
+        end
+    end
+
+    # f = Figure()
+    # ax = Axis(f[1,1])
+    fig, ax, hm = heatmap(map)
+    Colorbar(fig[:,end+1], hm)
+    display(fig)
 end

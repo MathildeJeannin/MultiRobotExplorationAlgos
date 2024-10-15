@@ -78,6 +78,7 @@ mutable struct RobotPosMin{D} <: AbstractAgent
     all_robots_pos::Vector
     pathfinder::Any
     plan::Vector
+    frontiers::Set
 end
 
 

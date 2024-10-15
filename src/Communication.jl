@@ -9,7 +9,7 @@ function ask_gridmap!(r1::Robot, r2::Robot)
     end
 end
 
-function merge_gridmaps!(r1::RobotDec, r2::RobotDec)
+function merge_gridmaps!(r1::Robot, r2::Robot)
     extent = size(r1.state.space_state.gridmap)
     for x in 1:extent[1]
         for y in 1:extent[2]
@@ -64,4 +64,14 @@ end
 function exchange_positions!(r1::RobotPosMin, r2::RobotPosMin)
     r1.all_robots_pos[r2.id] = r2.pos
     r2.all_robots_pos[r1.id] = r1.pos
+end
+
+
+function exchange_frontiers!(r1::RobotPosMin, r2::RobotPosMin)
+    for f in r1.frontiers
+        push!(r2.frontiers, f)
+    end
+    for f in r2.frontiers
+        push!(r1.frontiers, f)
+    end
 end
