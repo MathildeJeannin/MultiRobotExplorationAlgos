@@ -110,7 +110,7 @@ function run(;
         end
 
     end        
-    return nb_steps
+    return nb_steps, abmproperties(model).seen_all_gridmap
 end
 
 
