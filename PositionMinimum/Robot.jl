@@ -102,10 +102,6 @@ function agent_step!(robot, model)
     extent = size(robot.gridmap)
     nb_robots = abmproperties(model).nb_robots
 
-    println("robot $(robot.id)")
-
-    println("communicating ...")
-
     in_range = nearby_robots(robot, model, robot.com_range)
     for r in in_range
         exchange_positions!(robot, r)
@@ -118,8 +114,6 @@ function agent_step!(robot, model)
     end
 
     scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
-
-    println("moving ...")
     
     while !isempty(robot.plan) && robot.plan[1] in scan
         action = (robot.plan[1][1]-robot.pos[1], robot.plan[1][2]-robot.pos[2])./distance(robot.plan[1], robot.pos)
@@ -130,13 +124,10 @@ function agent_step!(robot, model)
         deleteat!(robot.plan,1)
     end        
     
-    println("updating gridmap ...")
-
     obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
     gridmap_update!(robot.gridmap, 0, robot.id, robot.all_robots_pos, robot.vis_range, obstacles_pos, model)
 
     if isempty(robot.plan) && count(x->x == -2, robot.gridmap) > abmproperties(model).invisible_cells
-        println("computing frontiers")
         for pos in robot.all_robots_pos
             if pos != robot.pos
                 robot.pathfinder.walkmap[pos[1],pos[2]] = false
@@ -148,46 +139,3 @@ function agent_step!(robot, model)
     end
 
 end
-
-
-# function defineAction(robot::RobotPosMin, scan::Vector)
-#     i = 0
-#     cells = []
-#     in_scan = true
-#     while in_scan && i < length(robot.plan)
-#         i+=1
-#         cell = robot.plan[i]
-#         if cell ∈ scan
-#             push!(cells, cell)
-#         else
-#             in_scan = false
-#         end
-#     end
-
-#     new_pos = (0,0)
-#     action = (0,0)
-#     prev_pos = robot.pos
-#     prev_action = (0,0)
-
-#     pos_ok = true
-#     k = 1
-
-#     while pos_ok && !isempty(cells)
-
-#         action = (cells[1][1]-robot.pos[1], cells[1][2]-robot.pos[2])./distance(cells[1], robot.pos)
-
-#         new_pos, _ = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, robot.vis_range, action)
-
-#         if new_pos == prev_pos
-#             pos_ok = false
-#         end 
-        
-#         deleteat!(robot.plan,1)
-#         deleteat!(cells, 1)
-
-#         prev_action = action
-
-#     end
-
-#     return prev_action
-# end
