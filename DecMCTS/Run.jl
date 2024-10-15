@@ -270,29 +270,3 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
 
 
 end
-
-
-function _print_coverage_map(coverage_map::BitArray)
-    x,y,nb_robots = size(coverage_map)
-    map = MMatrix{x,y}(zeros(x,y))
-
-    for i in 1:x
-        for j in 1:y
-            for r in 1:nb_robots
-                if coverage_map[i,j,r]
-                    map[i,j] += 1
-                end
-                obs = collect(agents_in_position((i,j), model))
-                if !isempty(obs) && typeof(obs[1]) == Obstacle{2}
-                    map[i,j] = -1
-                end
-            end
-        end
-    end
-
-    # f = Figure()
-    # ax = Axis(f[1,1])
-    fig, ax, hm = heatmap(map)
-    Colorbar(fig[:,end+1], hm)
-    display(fig)
-end
