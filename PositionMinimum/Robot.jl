@@ -44,7 +44,7 @@ function initialize_model(
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
     else 
-        add_simple_obstacles(model, extent, nb_robots; N = 3)
+        abmproperties(model).invisible_cells[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
     end
 
     theta = [i*pi/4 for i in 0:7]
@@ -127,21 +127,10 @@ function agent_step!(robot, model)
     obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
     gridmap_update!(robot.gridmap, 0, robot.id, robot.all_robots_pos, robot.vis_range, obstacles_pos, model)
 
-    # if isempty(robot.plan) && count(x->x == -2, robot.gridmap) > abmproperties(model).invisible_cells
-    if count(x->x == -2, robot.gridmap) > abmproperties(model).invisible_cells
-        for pos in robot.all_robots_pos
-            if pos != robot.pos
-                robot.pathfinder.walkmap[pos[1],pos[2]] = false
-            end
-        end
+    if count(x->x == -2, robot.gridmap) > abmproperties(model).invisible_cells[1]
         all_frontiers = frontierDetection(robot)
         goal = positionMinimum(all_frontiers, robot.gridmap, robot.all_robots_pos[Not(robot.id)], robot.pos)
         robot.plan = collect(plan_route!(robot, goal, robot.pathfinder))
-        for pos in robot.all_robots_pos
-            if pos != robot.pos
-                robot.pathfinder.walkmap[pos[1],pos[2]] = true
-            end
-        end
     end
 
 end

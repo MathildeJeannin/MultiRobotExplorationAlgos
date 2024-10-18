@@ -36,11 +36,11 @@ function run(;
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
     nb_communication = 1,
-    penalite = true,
+    # penalite = true,
     id_expe = 0
     )
 
-    global use_penalite = penalite
+    # global use_penalite = penalite
 
     if typeof(fct_proba) == String
         fct_proba = getfield(Main, Symbol(fct_proba))
@@ -50,7 +50,7 @@ function run(;
     end
 
     vis_range = 3
-    invisible_cells = 0
+    invisible_cells = [0]
     if num_map > 0 
         f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
@@ -58,7 +58,7 @@ function run(;
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = parse(Int64, line_triche)
+        invisible_cells = [parse(Int64, line_triche)]
         nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
     end
 
@@ -121,7 +121,7 @@ function run(;
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
     # plan_route!(agent, pos, pathfinder)
 
-    while (max_knowledge != (extent[1]*extent[2]) - abmproperties(model).invisible_cells) && (nb_steps < max_steps)
+    while (max_knowledge != (extent[1]*extent[2]) - abmproperties(model).invisible_cells[1]) && (nb_steps < max_steps)
         nb_steps += 1
 
         
@@ -207,7 +207,7 @@ function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVect
     L = Vector{Tuple{Int,Int}}(undef, length(action_sequence)+1)
     L[1] = robots_pos[id]
     for (i,a) in enumerate(action_sequence)
-        pos,_ = compute_new_pos(gridmap, id, robots_pos, vis_range, a)
+        pos,_ = compute_new_pos(gridmap, id, robots_pos, vis_range, a.action)
         robots_pos[id] = pos
         L[i+1] = pos
     end

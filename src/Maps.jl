@@ -22,7 +22,7 @@ function add_obstacles(model, nb_robots; N = 5, extent = (20,20))
     for i in 1:N
         pos = (rand(T1),rand(T2))
         id = nb_robots + i
-        agent = Robot{D}(id, pos, 0, 0, true, nothing, nothing, nothing, nothing)
+        agent = Obstacle{D}(id, pos)
         add_agent!(agent, pos, model)
     end
 end
@@ -32,6 +32,8 @@ function add_simple_obstacles(model, extent, nb_robots; N = 1, min_obstacle_size
     count = 0
     attempts = 0
     ids = nb_robots
+
+    invisible_cells = 0 
 
     while count < N && attempts < 100
         attempts += 1
@@ -43,15 +45,17 @@ function add_simple_obstacles(model, extent, nb_robots; N = 1, min_obstacle_size
 
         if is_valid_position(model, extent, x, y, obstacle_width, obstacle_height)
             count += 1
+            invisible_cells += (obstacle_width - 1)*(obstacle_height - 1)
             for i in x:x+obstacle_width
                 for j in y:y+obstacle_height
                     ids += 1
-                    agent = Robot{2}(ids, (i,j), 0, 0, true, nothing, nothing, nothing, nothing)
+                    agent = Obstacle{2}(ids, (i,j))
                     add_agent!(agent, (i,j), model)
                 end
             end
         end
     end
+    return invisible_cells
 end
    
 

@@ -23,7 +23,7 @@ function run(;
     )
 
     vis_range = 3
-    invisible_cells = 0
+    invisible_cells = [0]
     if num_map > 0 
         f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
@@ -31,7 +31,7 @@ function run(;
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = parse(Int64, line_triche)
+        invisible_cells = [parse(Int64, line_triche)]
         nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
     end
 
@@ -76,7 +76,7 @@ function run(;
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
     # plan_route!(agent, pos, pathfinder)
 
-    while (max_knowledge != (extent[1]*extent[2]-abmproperties(model).invisible_cells)) && (nb_steps < max_steps)
+    while (max_knowledge != (extent[1]*extent[2]-abmproperties(model).invisible_cells[1])) && (nb_steps < max_steps)
         nb_steps += 1
 
         for robot in robots

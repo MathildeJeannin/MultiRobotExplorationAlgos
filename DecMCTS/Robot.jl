@@ -55,7 +55,7 @@ function initialize_model(
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
     else 
-        add_simple_obstacles(model, extent, nb_robots; N = 3)
+        abmproperties(model).invisible_cells[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
     end
 
     theta = [i*pi/4 for i in 0:7]
@@ -107,41 +107,41 @@ function initialize_model(
 end
 
 
-function compute_new_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action::action_robot)
-    pos = robots_pos[id]
-    other_robots_pos = robots_pos[1:end .!= id, :]
+# function compute_new_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action::action_robot)
+#     pos = robots_pos[id]
+#     other_robots_pos = robots_pos[1:end .!= id, :]
 
-    extent = size(gridmap)
-    ray = raytracing(pos, (vis_range .* action.action) .+ pos, vis_range)
-    x,y = ray[1][1],ray[1][2]
+#     extent = size(gridmap)
+#     ray = raytracing(pos, (vis_range .* action.action) .+ pos, vis_range)
+#     x,y = ray[1][1],ray[1][2]
 
-    if length(ray)==1
-        return (x,y), (0,0)
+#     if length(ray)==1
+#         return (x,y), (0,0)
     
-    else
-        for element in ray[2:end]
-            x_prev, y_prev = x,y 
-            x,y = element[1], element[2]
+#     else
+#         for element in ray[2:end]
+#             x_prev, y_prev = x,y 
+#             x,y = element[1], element[2]
 
-            # hors zone 
-            if (x > extent[1]) || (y > extent[2]) || (x < 1) || (y < 1)
-                return (x_prev, y_prev), (0,0)
-            end 
+#             # hors zone 
+#             if (x > extent[1]) || (y > extent[2]) || (x < 1) || (y < 1)
+#                 return (x_prev, y_prev), (0,0)
+#             end 
 
-            # if gridmap[x,y] == -2
-            #     println("walking in the unknown")
-            # end
+#             # if gridmap[x,y] == -2
+#             #     println("walking in the unknown")
+#             # end
 
-            # obstacle/robots, tous les cas
-            if gridmap[x,y] == -1 
-                return (x_prev, y_prev), (x,y)
-            elseif (x,y) in other_robots_pos
-                return (x_prev,y_prev), (0,0)
-            end 
-        end
-    end
-    return (x,y), (0,0)
-end
+#             # obstacle/robots, tous les cas
+#             if gridmap[x,y] == -1 
+#                 return (x_prev, y_prev), (x,y)
+#             elseif (x,y) in other_robots_pos
+#                 return (x_prev,y_prev), (0,0)
+#             end 
+#         end
+#     end
+#     return (x,y), (0,0)
+# end
 
 
 function agents_simulate!(robot, model, alpha, beta;
@@ -152,7 +152,7 @@ function agents_simulate!(robot, model, alpha, beta;
     )
     extent = size(model[1].state.space_state.gridmap)
 
-    if robot.state.space_state.known_cells != extent[1]*extent[2]
+    if robot.state.space_state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
 
         for i in 1:nb_communication
 
@@ -185,7 +185,7 @@ function agent_step!(robot, model, vis_tree)
     extent = size(model[1].state.space_state.gridmap)
     nb_robots = length(robot.plans)
 
-    if robot.state.space_state.known_cells != extent[1]*extent[2]
+    if robot.state.space_state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
 
         if !isempty(robot.plans[robot.id].best_sequences)
             a = robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]][1]
@@ -200,7 +200,7 @@ function agent_step!(robot, model, vis_tree)
             robots_pos[n.id] = n.pos
         end
 
-        new_pos,_ = compute_new_pos(robot.state.space_state.gridmap, robot.id, robots_pos, robot.vis_range, a)
+        new_pos,_ = compute_new_pos(robot.state.space_state.gridmap, robot.id, robots_pos, robot.vis_range, a.action)
         move_agent!(robot, new_pos, model)
 
         robot.state.space_state.robots_plans[robot.id].state = robot_state(robot.id, robot.pos)
