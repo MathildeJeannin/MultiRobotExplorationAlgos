@@ -107,42 +107,6 @@ function initialize_model(
 end
 
 
-# function compute_new_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action::action_robot)
-#     pos = robots_pos[id]
-#     other_robots_pos = robots_pos[1:end .!= id, :]
-
-#     extent = size(gridmap)
-#     ray = raytracing(pos, (vis_range .* action.action) .+ pos, vis_range)
-#     x,y = ray[1][1],ray[1][2]
-
-#     if length(ray)==1
-#         return (x,y), (0,0)
-    
-#     else
-#         for element in ray[2:end]
-#             x_prev, y_prev = x,y 
-#             x,y = element[1], element[2]
-
-#             # hors zone 
-#             if (x > extent[1]) || (y > extent[2]) || (x < 1) || (y < 1)
-#                 return (x_prev, y_prev), (0,0)
-#             end 
-
-#             # if gridmap[x,y] == -2
-#             #     println("walking in the unknown")
-#             # end
-
-#             # obstacle/robots, tous les cas
-#             if gridmap[x,y] == -1 
-#                 return (x_prev, y_prev), (x,y)
-#             elseif (x,y) in other_robots_pos
-#                 return (x_prev,y_prev), (0,0)
-#             end 
-#         end
-#     end
-#     return (x,y), (0,0)
-# end
-
 
 function agents_simulate!(robot, model, alpha, beta;
     nb_sequence = 3,
