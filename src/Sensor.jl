@@ -181,6 +181,11 @@ function _print_scan(scan_list, extent)
 end
 
 
+function distance(cell1,cell2)
+    return sqrt((cell1[1] - cell2[1])^2 + (cell1[2] - cell2[2])^2)
+end
+
+
 function _print_gridmap(gridmap, states)
     println()
     pos = [s.pos for s in states]
