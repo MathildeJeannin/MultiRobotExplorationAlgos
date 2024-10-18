@@ -29,7 +29,7 @@ function POMDPs.transition(m::robotMDP, s::mdp_state, a::action_robot)
             end
         end
 
-        next_pos, obstacle_pos = compute_new_pos(s.space_state.gridmap, robot.id, [p.state.pos for p in next_robots_plans], m.vis_range, a)
+        next_pos, obstacle_pos = compute_new_pos(s.space_state.gridmap, robot.id, [p.state.pos for p in next_robots_plans], m.vis_range, a.action)
 
         next_robots_plans[robot.id].state = robot_state(robot.id, next_pos)
 
@@ -45,7 +45,7 @@ function POMDPs.transition(m::robotMDP, s::mdp_state, a::action_robot)
                     action = rand(m.possible_actions)
                 end
                 
-                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [p.state.pos for p in next_robots_plans], m.vis_range, action)
+                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [p.state.pos for p in next_robots_plans], m.vis_range, action.action)
 
                 next_robots_plans[plan.state.id].state = robot_state(plan.state.id, next_robot_pos)
 
@@ -69,17 +69,31 @@ function POMDPs.reward(m::robotMDP, s::mdp_state, a::action_robot, sp::mdp_state
 
     # println(count(x->x!=-2, sp.space_state.gridmap) == sp.space_state.known_cells)
 
-    global use_penalite
-    if use_penalite
-        penalite = false
-        for i in eachindex(length(sp.space_state.robots_plans))
-            if sqrt((sp.space_state.robots_plans[robot.id].state.pos[1]-sp.space_state.robots_plans[i].state.pos[1])^2 + (sp.space_state.robots_plans[robot.id].state.pos[2]-sp.space_state.robots_plans[i].state.pos[2])^2) > robot.com_range && !penalite
-                penalite = true
-                r = r/10
-            end
-        end
+    # global use_penalite
+    # if use_penalite
+    #     penalite = false
+    #     for i in eachindex(length(sp.space_state.robots_plans))
+    #         if sqrt((sp.space_state.robots_plans[robot.id].state.pos[1]-sp.space_state.robots_plans[i].state.pos[1])^2 + (sp.space_state.robots_plans[robot.id].state.pos[2]-sp.space_state.robots_plans[i].state.pos[2])^2) > robot.com_range && !penalite
+    #             penalite = true
+    #             r = r/10
+    #         end
+    #     end
+    # end
+
+    # a = -4/(robot.com_range - robot.vis_range)^2
+    # b = -a*(robot.com_range + robot.vis_range)
+    # c = a*(robot.com_range*robot.vis_range)
+    # f(x) = a*x^2+b*x+c
+
+    mu = (robot.vis_range+robot.com_range)/2
+    sigma = robot.com_range-robot.vis_range
+    f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
+    Q = 0 
+    for i in eachindex(length(sp.space_state.robots_plans))
+        d = distance(sp.space_state.robots_plans[robot.id].state.pos, sp.space_state.robots_plans[i].state.pos)
+        Q += f(d)
     end
-    return r
+    return r*Q
 end
 
 
