@@ -6,9 +6,9 @@ include("MDP.jl")
 include("../src/Maps.jl")
 include("Robot.jl")
 include("../src/Sensor.jl")
+include("../src/FrontierDetection.jl")
 include("Optimization.jl")
 include("../src/Communication.jl")
-include("Policy.jl")
 
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
@@ -96,13 +96,13 @@ function run(;
         for (i,r) in enumerate(robots)
             id = r.id
             observ_pos_list[id] = Vector{Observable}(undef, nb_robots)
-            observ_map[id] = Observable(Matrix(robots[1].state.space_state.gridmap))
+            observ_map[id] = Observable(Matrix(robots[1].state.gridmap))
             push!(observ_traj_list[id][], Point2f(r.pos))
             observ_best_sequences_list[id] = Vector{Observable}(undef, nb_robots)
             for i in 1:nb_robots
                 observ_pos_list[id][i] = Observable(r.plans[i].state.pos)
-                best_plan = Vector{action_robot}(undef, 0)
-                observ_best_sequences_list[id][i] = Observable(list_pos(r.state.space_state.gridmap, i, [p.state.pos for p in r.plans], r.vis_range, best_plan))
+                best_plan = Vector{Action}(undef, 0)
+                observ_best_sequences_list[id][i] = Observable(list_pos(r.state.gridmap, i, [p.state.pos for p in r.plans], r.vis_range, best_plan))
 
             end
         end
@@ -111,7 +111,7 @@ function run(;
     end
      
     nb_steps = 0
-    max_knowledge = maximum([r.state.space_state.known_cells for r in robots])
+    max_knowledge = maximum([r.state.known_cells for r in robots])
 
     walkmap = BitArray{2}(trues(extent))
     obs = [r.pos for r in collect(nearby_obstacles((1,1),model,100))]
@@ -138,7 +138,7 @@ function run(;
                     if !isempty(robot.plans[i].assigned_proba)
                         best_seq_index = findall(item->item==maximum(robot.plans[i].assigned_proba), robot.plans[i].assigned_proba)[1]
                         best_plan = robot.plans[i].best_sequences[best_seq_index]
-                        observ_best_sequences_list[robot.id][i][] = list_pos(robot.state.space_state.gridmap, i, [p.state.pos for p in robot.plans], robot.vis_range, best_plan)
+                        observ_best_sequences_list[robot.id][i][] = list_pos(robot.state.gridmap, i, [p.state.pos for p in robot.plans], robot.vis_range, best_plan)
                     end
                 end
             end
@@ -150,12 +150,12 @@ function run(;
                     observ_pos_list[robot.id][i][] = robot.plans[i].state.pos  
                 end              
                 observ_traj_list[robot.id][] = push!(observ_traj_list[robot.id][], Point2f(robot.pos))
-                observ_map[robot.id][] = robot.state.space_state.gridmap
+                observ_map[robot.id][] = robot.state.gridmap
             end
 
             
         end
-        max_knowledge = maximum([r.state.space_state.known_cells for r in robots])
+        max_knowledge = maximum([r.state.known_cells for r in robots])
 
         if id_expe!=0
             add_metrics(model, pathfinder, id_expe;
@@ -203,11 +203,11 @@ end
 
 
 
-function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action_sequence::Vector{action_robot})
+function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action_sequence::Vector{Action})
     L = Vector{Tuple{Int,Int}}(undef, length(action_sequence)+1)
     L[1] = robots_pos[id]
     for (i,a) in enumerate(action_sequence)
-        pos,_ = compute_new_pos(gridmap, id, robots_pos, vis_range, a.action)
+        pos,_ = compute_new_pos(gridmap, id, robots_pos, vis_range, a.direction)
         robots_pos[id] = pos
         L[i+1] = pos
     end
@@ -238,7 +238,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
     nb_communication = 1
     )
     robots = [model[i] for i in eachindex(model[1].plans)]
-    extent = size(robots[1].state.space_state.gridmap)
+    extent = size(robots[1].state.gridmap)
 
     percent_of_map = zeros(length(robots)+1)
     astar_distances = zeros((length(robots), length(robots)))

@@ -1,21 +1,21 @@
 function ask_gridmap!(r1::Robot, r2::Robot)
-    extent = size(r1.state.space_state.gridmap)
+    extent = size(r1.state.gridmap)
     for x in 1:extent[1]
         for y in 1:extent[2]
-            if r1.state.space_state.gridmap[x,y] == -2
-                r1.state.space_state.gridmap[x,y] = r2.state.space_state.gridmap[x,y]
+            if r1.state.gridmap[x,y] == -2
+                r1.state.gridmap[x,y] = r2.state.gridmap[x,y]
             end
         end
     end
 end
 
 function merge_gridmaps!(r1::Robot, r2::Robot)
-    extent = size(r1.state.space_state.gridmap)
+    extent = size(r1.state.gridmap)
     for x in 1:extent[1]
         for y in 1:extent[2]
-            if r1.state.space_state.gridmap[x,y] == -2 && r2.state.space_state.gridmap[x,y] != -2
-                r1.state.space_state.gridmap[x,y] = r2.state.space_state.gridmap[x,y]
-                r1.state.space_state.known_cells += 1
+            if r1.state.gridmap[x,y] == -2 && r2.state.gridmap[x,y] != -2
+                r1.state.gridmap[x,y] = r2.state.gridmap[x,y]
+                r1.state.known_cells += 1
             end
         end
     end
@@ -36,13 +36,13 @@ end
 
 function merge_all_gridmaps(robots::Vector{Robot})
     robots = [model[i] for i in eachindex(model[1].plans)]
-    extent = size(robots[1].state.space_state.gridmap)
+    extent = size(robots[1].state.gridmap)
     full_gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
     for x in 1:extent[1]
         for y in 1:extent[2]
             for robot in robots
-                if robot.state.space_state.gridmap[x,y] != -2
-                    full_gridmap[x,y] = robot.state.space_state.gridmap[x,y]
+                if robot.state.gridmap[x,y] != -2
+                    full_gridmap[x,y] = robot.state.gridmap[x,y]
                 end
             end
         end
@@ -57,8 +57,8 @@ end
 
 
 function exchange_positions!(r1::RobotDec, r2::RobotDec)
-    r1.plans[r2.id].state = robot_state(r2.id, r2.pos)
-    r1.state.space_state.robots_plans[r2.id].state = robot_state(r2.id, r2.pos)
+    r1.plans[r2.id].state = RobotState(r2.id, r2.pos)
+    r1.state.robots_plans[r2.id].state = RobotState(r2.id, r2.pos)
 end
 
 function exchange_positions!(r1::RobotPosMin, r2::RobotPosMin)
@@ -73,5 +73,12 @@ function exchange_frontiers!(r1::RobotPosMin, r2::RobotPosMin)
     end
     for f in r2.frontiers
         push!(r1.frontiers, f)
+    end
+end
+
+function exchange_frontiers!(r1::RobotDec, r2::RobotDec)
+    frontiers = r1.state.frontiers
+    for f in frontiers
+        push!(r2.state.frontiers, f)
     end
 end

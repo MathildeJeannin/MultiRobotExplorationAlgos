@@ -49,9 +49,9 @@ function initialize_model(
 
     theta = [i*pi/4 for i in 0:7]
     rad_actions = [(round(cos(θ),digits=2),round(sin(θ), digits=2)) for θ in theta]
-    possible_actions = Vector{action_robot}(undef,length(rad_actions))
+    possible_actions = Vector{Action}(undef,length(rad_actions))
     for (i,a) in enumerate(rad_actions)
-        possible_actions[i] = action_robot(a)
+        possible_actions[i] = Action(a)
     end
 
 
@@ -67,10 +67,10 @@ function initialize_model(
         known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, [(1,1) for i in 1:nb_robots], vis_range, obstacles_poses, model)
 
         walkmap = BitArray{2}(trues(extent))
-        obs = [r.pos for r in collect(nearby_obstacles((1,1),model,100))]
-        for p in obs
-            walkmap[p[1],p[2]] = false
-        end
+        # obs = [r.pos for r in collect(nearby_obstacles((1,1),model,100))]
+        # for p in obs
+        #     walkmap[p[1],p[2]] = false
+        # end
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
         robot = RobotPosMin{D}(id, pos, vis_range, com_range, gridmap_n, [(1,1) for i in 1:nb_robots], pathfinder, [], Set())
@@ -81,9 +81,15 @@ function initialize_model(
                 robot.pathfinder.walkmap[pos[1],pos[2]] = false
             end
         end
-        all_frontiers = frontierDetection(robot)
+        robot.frontiers, all_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.gridmap, robot.all_robots_pos, robot.frontiers; need_repartition=true)
         goal = positionMinimum(all_frontiers, robot.gridmap, robot.all_robots_pos[Not(robot.id)], robot.pos)
         robot.plan = collect(plan_route!(robot, goal, robot.pathfinder))
+
+        for pos in robot.all_robots_pos
+            if pos != robot.pos
+                robot.pathfinder.walkmap[pos[1],pos[2]] = true
+            end
+        end
     end
 
     robots = [model[i] for i in 1:nb_robots]
@@ -109,9 +115,9 @@ function agent_step!(robot, model)
         exchange_frontiers!(robot,r)
     end
 
-    for pos in robot.all_robots_pos
-        robot.pathfinder.walkmap[pos[1],pos[2]] = true
-    end
+    # for pos in robot.all_robots_pos
+    #     robot.pathfinder.walkmap[pos[1],pos[2]] = true
+    # end
 
     scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
     
@@ -126,9 +132,10 @@ function agent_step!(robot, model)
     
     obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
     gridmap_update!(robot.gridmap, 0, robot.id, robot.all_robots_pos, robot.vis_range, obstacles_pos, model)
+    pathfinder_update!(robot.pathfinder, robot.gridmap)
 
     if count(x->x == -2, robot.gridmap) > abmproperties(model).invisible_cells[1]
-        all_frontiers = frontierDetection(robot)
+        robot.frontiers, all_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.gridmap, robot.all_robots_pos, robot.frontiers; need_repartition=true)
         goal = positionMinimum(all_frontiers, robot.gridmap, robot.all_robots_pos[Not(robot.id)], robot.pos)
         robot.plan = collect(plan_route!(robot, goal, robot.pathfinder))
     end

@@ -6,7 +6,7 @@ include("../src/Maps.jl")
 include("Robot.jl")
 include("../src/Sensor.jl")
 include("../src/Communication.jl")
-include("FrontierDetection.jl")
+include("../src/FrontierDetection.jl")
 include("PositionMinimum.jl")
 
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)

@@ -152,15 +152,27 @@ function raytracing(A, B, length_AB)
 end
 
 
-function limitScanWithObstacles(robot::RobotPosMin, scan::Vector)
-    # scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
-    lscan = limit_scan(scan, robot.pos)
+function limitScanWithObstacles(id::Int, pos::Tuple, vis_range::Int, all_robots_pos::Union{Vector,SizedVector}, gridmap::MMatrix, scan::Vector)
+    lscan = limit_scan(scan, pos)
     scan_accurate = Set()
     for l in lscan
-        cell, _  = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, robot.vis_range, (0,0), goal = l)
+        cell, _  = compute_new_pos(gridmap, id, all_robots_pos, vis_range, (0,0), goal = l)
         push!(scan_accurate, cell)
     end
     return scan_accurate
+end
+
+
+
+function pathfinder_update!(pathfinder::Any, gridmap::MMatrix)
+    extent = X,Y = size(gridmap)
+    for i in 1:X
+        for j in 1:Y
+            if gridmap[i,j] == -1
+                pathfinder.walkmap[i,j] = false
+            end
+        end
+    end
 end
 
 

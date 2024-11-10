@@ -1,44 +1,50 @@
-@struct_hash_equal struct robot_state
+@struct_hash_equal struct RobotState
     id::Int
     pos::Tuple{Int, Int}
 end
 
-@struct_hash_equal mutable struct space_state
+# @struct_hash_equal mutable struct space_state
+#     id::Int
+#     gridmap::MMatrix
+#     known_cells::Int64
+#     seen_cells::Int64
+#     robots_plans::MVector # vector of Robot_plan
+# end
+
+@struct_hash_equal mutable struct State 
     id::Int
+    # space_state::space_state
     gridmap::MMatrix
     known_cells::Int64
     seen_cells::Int64
     robots_plans::MVector # vector of Robot_plan
-end
-
-@struct_hash_equal struct mdp_state 
-    space_state::space_state
+    frontiers::Set
     nb_coups::Int
 end
 
 
-@struct_hash_equal struct action_robot
-    action::Tuple{Float64,Float64}
+@struct_hash_equal struct Action
+    direction::Tuple{Float64,Float64}
 end
 
 
-struct robotMDP <: MDP{mdp_state, action_robot}
+struct RobotMDP <: MDP{State, Action}
     vis_range::Int64
     nb_obstacle::Int64
     discount::Float64
-    possible_actions::Vector{action_robot}
+    possible_actions::Vector{Action}
 end
 
 
-@struct_hash_equal mutable struct Robot_plan 
+@struct_hash_equal mutable struct RobotPlan 
 # mutable struct Robot_plan 
-    state::robot_state
-    best_sequences::Vector{Vector{action_robot}}
+    state::RobotState
+    best_sequences::Vector{Vector{Action}}
     assigned_proba::Vector{Float64}
 end
 
 
-mutable struct Rollout_info
+mutable struct RolloutInfo
     in_rollout::Bool
     debut_rollout::Int64
 end
@@ -62,10 +68,11 @@ mutable struct RobotDec{D} <: AbstractAgent
     pos::NTuple{D,Int}
     vis_range::Int
     com_range::Int
-    plans::Union{Nothing, Vector{Robot_plan}}
-    rollout_info::Union{Nothing, Rollout_info}
-    state::Union{Nothing, mdp_state}
-    planner::Union{Nothing, DPWPlanner}
+    plans::Vector{RobotPlan}
+    rollout_info::RolloutInfo
+    state::State
+    planner::DPWPlanner
+    pathfinder::Any
 end
 
 

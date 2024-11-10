@@ -1,54 +1,16 @@
-# function frontierDetection(pos::Tuple{Int,Int}, gridmap::MMatrix)
-#     queue = Tuple{Int,Int}[]
-#     frontier_cells = Set() 
-#     visited = Set()
-#     extent = size(gridmap)
-
-#     push!(queue, pos)
-
-#     println("start computing frontier ...")
-#     while !isempty(queue)
-#         cell = x,y = queue[1]
-#         deleteat!(queue,1)
-#         push!(visited, cell)
-
-#         frontier_cells_local = isFrontier(cell, gridmap)
-#         for cell in frontier_cells_local
-#             push!(frontier_cells, cell)
-#         end
-
-#         for (dx,dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), 
-#             (-1, -1), (-1, 1), (1, -1), (1, 1)]
-#             n = i,j = (x+dx,y+dy)
-#             if n ∉ visited && i > 0 && i <= extent[1] && j > 0 && j <= extent[2] && gridmap[i,j] == 0
-#                 push!(queue, n)
-#             end
-#         end
-#     end
-#     println("repartition...")
-#     return frontierRepartition(gridmap, frontier_cells)
-# end
-
-
-function frontierDetection(robot::RobotPosMin)
-    scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
-    # lscan = limit_scan(scan, robot.pos)
-    lscan = limitScanWithObstacles(robot, scan)
-    queue = vcat(collect(lscan), filter(in(robot.frontiers), scan))
-    gridmap = robot.gridmap
+# function frontierDetection(robot::Robot)
+function frontierDetection(id::Int, pos::Tuple, vis_range::Int, gridmap::MMatrix, all_robots_pos::Union{Vector, SizedVector}, frontiers::Set; need_repartition=true)
+    scan = collect(nearby_positions(pos, model, vis_range))
+    lscan = limitScanWithObstacles(id, pos, vis_range, all_robots_pos, gridmap, scan)
+    queue = vcat(collect(lscan), filter(in(frontiers), scan))
     visited = Tuple{Int,Int}[]
     while !isempty(queue)
         x,y = cell = queue[1]
         deleteat!(queue, 1)
 
-        # local_frontiers, is_frontier = isFrontier(cell, gridmap)
         is_frontier = isFrontier(cell, gridmap)
         if gridmap[x,y] == 0 && is_frontier
-            # for f in local_frontiers
-            #     println(f)
-            #     push!(robot.frontiers, f)
-            # end
-            push!(robot.frontiers, cell)
+            push!(frontiers, cell)
         end
 
         if is_frontier || gridmap[x,y] == -1
@@ -63,14 +25,18 @@ function frontierDetection(robot::RobotPosMin)
         end
     end
    
-    for f in robot.frontiers
+    for f in frontiers
         # _, is_frontier = isFrontier(f, gridmap)
         is_frontier = isFrontier(f,gridmap)
         if !is_frontier
-            delete!(robot.frontiers, f)
+            delete!(frontiers, f)
         end
     end
-    return frontierRepartition(gridmap, robot.frontiers)
+    if need_repartition
+        return frontiers, frontierRepartition(gridmap, frontiers)
+    else
+        return frontiers
+    end
 end
 
 
@@ -97,7 +63,7 @@ function isFrontier(f::Tuple, gridmap::MMatrix)
 end
 
 
-function frontierRepartition(gridmap::MMatrix, frontier_cells::Set)
+function frontierRepartition(gridmap::MMatrix, frontier_cells::Set) # = BFS
     graph = buildGraph(frontier_cells)
     frontiers = []
     visited = Set()
