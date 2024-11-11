@@ -1,0 +1,14 @@
+Creating 1 simu, n = 0
+Finished 1 simu, n = 1
+All done
+Creating 2 simu, n = 0
+Finished 2 simu, n = 2
+All done
+Creating 2 simu, n = 0
+Creating 2 simu, n = 0
+Finished 2 simu, n = 2
+All done
+Creating 2 simu, n = 0
+Creating 2 simu, n = 0
+Finished 2 simu, n = 2
+All done
