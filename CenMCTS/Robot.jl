@@ -13,6 +13,7 @@ function initialize_model(;
     seed = 1               # random seed
 )
 
+    nb_robots = N
     # initialize model
     space = GridSpace(extent, periodic = false, metric = :euclidean)
     rng = Random.MersenneTwister(seed)  # reproducibility
@@ -24,19 +25,24 @@ function initialize_model(;
     T1 = Tuple(i for i in 1:begin_zone[1])
     T2 = Tuple(i for i in 1:begin_zone[2])
 
+    properties = (
+        seen_all_gridmap = BitArray{3}(falses((extent[1],extent[2],nb_robots))),
+        nb_obstacles, 
+        invisible_cells
+    )
+
 
     # TODO change to UnremovableABM
-    model = AgentBasedModel(Robot{D}, space; agent_step!,
+    model = AgentBasedModel(Union{Robot, Obstacle}, space; agent_step!,
         rng = rng,
-        scheduler = scheduler
+        scheduler = scheduler,
+        properties = properties
     )
 
     for n ∈ 1:N
         pos = (rand(T1),rand(T2))
         id = n
-        isObstacle = false
-        # alive = true
-        agent = Robot{D}(id, pos, vis_range, com_range, isObstacle)
+        agent = RobotCen{D}(id, pos, vis_range)
         add_agent!(agent, pos, model)
     end
 
@@ -45,48 +51,9 @@ end
 
 
 
-function compute_new_pos!(gridmap::MMatrix, vis_range::Int, pos::Tuple, other_robots_poses::Vector, action::action_robot; transition = false, proba_obs = 0.0, rng = nothing, distribution = nothing)
-
-    extent = size(gridmap)
-    pos_action = (vis_range .* action.action) .+ pos
-    ray = raytracing(pos, pos_action, vis_range)
-    x,y = ray[1][1],ray[1][2]
-
-    if length(ray)==1
-        return (x,y), (0,0)
-    
-    else
-        for element in ray[2:end]
-            x_prev, y_prev = x,y 
-            x,y = element[1], element[2]
-
-            # hors zone 
-            if (x > extent[1]) || (y > extent[2]) || (x < 1) || (y < 1)
-                return (x_prev, y_prev), (0,0)
-            end
-
-            # cellule inconnue, uniquement cas transition
-            if transition
-                if gridmap[x,y] == -2
-                    gridmap[x,y] = rand(rng, distribution)
-                end
-            end
-
-            
-            if gridmap[x,y] == -1 
-                return (x_prev, y_prev), (x,y)
-            elseif (x,y) ∈ other_robots_poses
-                return (x_prev, y_prev), (0,0)
-            end
-        end
-    end
-    return (x,y), (0,0)
-end
-
-
 function agent_step!(model, gridmap, planner, state, visualisation)
     extent = size(gridmap)
-    nb_robots = length(state.robot_list)
+    nb_robots = length(state.robots_states)
     robots = [model[i] for i in 1:nb_robots]
 
     vis_range = robots[1].vis_range
@@ -97,29 +64,31 @@ function agent_step!(model, gridmap, planner, state, visualisation)
         inchrome(D3Tree(info[:tree], init_expand=4))
     end
 
-    next_robots_states = Vector{robot_state}(undef, nb_robots)
+    next_robots_states = Vector{RobotState}(undef, nb_robots)
     next_gridmap = MMatrix{extent[1],extent[2]}(gridmap)
     nb_coups = state.nb_coups + 1
 
     for robot in robots
-        next_robots_states[robot.id] = robot_state(robot.id, robot.pos)
+        next_robots_states[robot.id] = RobotState(robot.id, robot.pos)
     end
+
+    all_robots_pos = [robot.pos for robot in robots]
 
     for robot in robots
         id = robot.id
-        action = filter(item->item.id == id, a)[1]
+        action = a.directions[id].direction
         pos = robot.pos
-        other_robots_poses = [rob.pos for rob in next_robots_states if rob.id != id]
-
-        next_pos,_ = compute_new_pos!(gridmap, vis_range, pos, other_robots_poses, action)
+        
+        next_pos,_ = compute_new_pos(gridmap, id, all_robots_pos, vis_range,  action)
         move_agent!(robot,next_pos,model)
-        next_robots_states[id] = robot_state(id, next_pos)
+        next_robots_states[id] = RobotState(id, next_pos)
         robot.pos = next_pos
+        all_robots_pos[id] = next_pos
 
-        obstacles = filter(obj -> obj.isObstacle, collect(nearby_agents(robot, model, robot.vis_range)))
-        obstacles_poses = [element.pos for element in obstacles]
-        gridmap_update!(next_gridmap, robot.id, next_pos, other_robots_poses, vis_range, obstacles_poses, model)
+        obstacles = nearby_obstacles(robot, model, robot.vis_range)
+        obstacles_pos = [element.pos for element in obstacles]
+        gridmap_update!(next_gridmap, 0, robot.id, all_robots_pos, vis_range, obstacles_pos, model)
     end
     
-    return mdp_state(next_robots_states, next_gridmap, state.seen_gridmap, nb_coups)
+    return StateCen(next_gridmap, next_robots_states, nb_coups)
 end

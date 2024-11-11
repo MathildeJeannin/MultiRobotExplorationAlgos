@@ -3,13 +3,6 @@
     pos::Tuple{Int, Int}
 end
 
-# @struct_hash_equal mutable struct space_state
-#     id::Int
-#     gridmap::MMatrix
-#     known_cells::Int64
-#     seen_cells::Int64
-#     robots_plans::MVector # vector of Robot_plan
-# end
 
 @struct_hash_equal mutable struct State 
     id::Int
@@ -28,16 +21,27 @@ end
 end
 
 
-struct RobotMDP <: MDP{State, Action}
+@struct_hash_equal mutable struct StateCen
+    gridmap::MMatrix
+    robots_states::Vector{RobotState}
+    nb_coups::Int
+end
+
+
+@struct_hash_equal struct ActionCen
+    directions::Vector{Action}
+end
+
+
+struct RobotMDP <: MDP{Union{State,StateCen}, Union{Action,ActionCen}}
     vis_range::Int64
     nb_obstacle::Int64
     discount::Float64
-    possible_actions::Vector{Action}
+    possible_actions::Union{Vector{Action}, Vector{ActionCen}}
 end
 
 
 @struct_hash_equal mutable struct RobotPlan 
-# mutable struct Robot_plan 
     state::RobotState
     best_sequences::Vector{Vector{Action}}
     assigned_proba::Vector{Float64}

@@ -1,11 +1,11 @@
-include("Packages.jl")
-include("Types.jl")
+include("../src/Packages.jl")
+include("../src/Types.jl")
 include("Figure.jl")
 include("Robot.jl")
 include("MDP.jl")
-include("Maps.jl")
+include("../src/Maps.jl")
 include("Robot.jl")
-include("Sensor.jl")
+include("../src/Sensor.jl")
 
 function run(; 
     alpha_state = 1.0, 
@@ -13,7 +13,7 @@ function run(;
     alpha_action = 1.0,
     k_action = 1.0,
     exploration_constant = 1.0, 
-    n_iterations = 1500, 
+    n_iterations = 1000, 
     keep_tree = false, 
     discount = 0.85, 
     nb_obstacles = 0, 
@@ -37,14 +37,14 @@ function run(;
     log = []
     invisible_cells = 0
     if num_map > 0 
-        f = open("/home/mathilde/Documents/These/Codes/SimulateurCentralizedMCTS/maps/map$num_map.txt", "r")
+        f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
         line_triche = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = parse(Int64, line_triche)
-        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateurCentralizedMCTS/maps/map$(num_map).txt") - 2
+        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
     end
 
     global gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
@@ -71,33 +71,33 @@ function run(;
 
     allObjects = allagents(model)
 
-    robot_list = Vector{robot_state}(undef, nb_robots)
+    robots_states = Vector{RobotState}(undef, nb_robots)
     robots = [model[i] for i in 1:nb_robots]
 
     for (i,r) in enumerate(robots)
         id = r.id
-        robot_list[id] = robot_state(r.id, r.pos)
+        robots_states[id] = RobotState(r.id, r.pos)
     end
 
-    
+    all_robots_pos = [r.pos for r in robots]
     for robot in robots
-        obstacles = filter(obj -> obj.isObstacle, collect(nearby_agents(robot, model, robot.vis_range)))
-        obstacles_poses = [element.pos for element in obstacles]
+        obstacles = nearby_obstacles(robot, model, robot.vis_range)
+        obstacles_pos = [element.pos for element in obstacles]
 
-        gridmap_update!(gridmap, robot.id, robot.pos, [rob.pos for rob in robots if rob.id != robot.id], robot.vis_range, obstacles_poses, model)
+        gridmap_update!(gridmap, 0, robot.id, all_robots_pos, robot.vis_range, obstacles_pos, model)
     end
 
     possible_actions = compute_actions(nb_robots)
 
-    mdp = robotMDP(nb_robots, vis_range, nb_obstacles, discount, possible_actions)
+    mdp = RobotMDP(vis_range, nb_obstacles, discount, possible_actions)
 
     solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant)
 
     global planner = solve(solver, mdp)
 
-    state = mdp_state(robot_list, gridmap, seen_gridmap, 0)
+    state = StateCen(gridmap, robots_states, 0)
 
-    push!(log, [copy(state.robot_list), copy(state.gridmap)])
+    push!(log, [copy(state.robots_states), copy(state.gridmap)])
 
     if vis_figure
         observ_map = Observable(Matrix(gridmap))
@@ -138,24 +138,24 @@ function run(;
         # end
         
         vis_figure ? observ_map[] = Matrix(gridmap) : nothing
-        add_metrics(model, state, pathfinder, id_expe;
-            alpha_state = alpha_state, 
-            k_state = k_state , 
-            alpha_action = alpha_action ,
-            k_action = k_action,
-            exploration_constant = exploration_constant, 
-            n_iterations = n_iterations, 
-            keep_tree = keep_tree, 
-            discount = discount, 
-            nb_obstacles = nb_obstacles, 
-            nb_robots = nb_robots,
-            extent = extent,
-            depth = depth,
-            max_time = max_time, 
-            max_steps = max_steps,
-            num_map = num_map,
-            invisible_cells = invisible_cells
-        )
+        # add_metrics(model, state, pathfinder, id_expe;
+        #     alpha_state = alpha_state, 
+        #     k_state = k_state , 
+        #     alpha_action = alpha_action ,
+        #     k_action = k_action,
+        #     exploration_constant = exploration_constant, 
+        #     n_iterations = n_iterations, 
+        #     keep_tree = keep_tree, 
+        #     discount = discount, 
+        #     nb_obstacles = nb_obstacles, 
+        #     nb_robots = nb_robots,
+        #     extent = extent,
+        #     depth = depth,
+        #     max_time = max_time, 
+        #     max_steps = max_steps,
+        #     num_map = num_map,
+        #     invisible_cells = invisible_cells
+        # )
     end
 
     return nb_steps
@@ -194,13 +194,13 @@ function _print_tree(tree, param_findall)
     println("Tree : ")
     for N in findall(x->x>1000, tree.total_n)
         gridmap = tree.s_labels[N].gridmap
-        poses = [tree.s_labels[N].robot_list[i].pos for i in 1:length(tree.s_labels[N].robot_list)]
+        poses = [tree.s_labels[N].robots_states[i].pos for i in 1:length(tree.s_labels[N].robots_states)]
         _print_gridmap(gridmap, poses)
     end
 end
 
 
-function add_metrics(model::StandardABM, state::mdp_state, pathfinder::Pathfinding.AStar{2}, id_expe::Int;
+function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfinding.AStar{2}, id_expe::Int;
     alpha_state = 1.0, 
     k_state = 500.0, 
     alpha_action = 1.0,
