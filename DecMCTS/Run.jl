@@ -36,7 +36,6 @@ function run(;
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
     nb_communication = 1,
-    # penalite = true,
     id_expe = 0
     )
 
@@ -52,14 +51,14 @@ function run(;
     vis_range = 3
     invisible_cells = [0]
     if num_map > 0 
-        f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
+        f = open("../src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
         line_triche = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = [parse(Int64, line_triche)]
-        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
+        nb_obstacles = countlines("../src/maps/map$(num_map).txt") - 2
     end
 
     global model = initialize_model(
@@ -157,30 +156,30 @@ function run(;
         end
         max_knowledge = maximum([r.state.known_cells for r in robots])
 
-        if id_expe!=0
-            add_metrics(model, pathfinder, id_expe;
-            alpha_state = alpha_state, 
-            k_state = k_state , 
-            alpha_action = alpha_action ,
-            k_action = k_action,
-            exploration_constant = exploration_constant, 
-            n_iterations = n_iterations, 
-            keep_tree = keep_tree, 
-            discount = discount, 
-            nb_obstacles = nb_obstacles, 
-            nb_robots = nb_robots,
-            extent = extent,
-            depth = depth,
-            max_time = max_time, 
-            max_steps = max_steps,
-            num_map = num_map,
-            com_range = com_range,
-            fct_proba = fct_proba,
-            fct_sequence = fct_sequence,
-            nb_sequence = nb_sequence,
-            nb_communication = nb_communication
-            )
-        end
+        # if id_expe!=0
+        #     add_metrics(model, pathfinder, id_expe;
+        #     alpha_state = alpha_state, 
+        #     k_state = k_state , 
+        #     alpha_action = alpha_action ,
+        #     k_action = k_action,
+        #     exploration_constant = exploration_constant, 
+        #     n_iterations = n_iterations, 
+        #     keep_tree = keep_tree, 
+        #     discount = discount, 
+        #     nb_obstacles = nb_obstacles, 
+        #     nb_robots = nb_robots,
+        #     extent = extent,
+        #     depth = depth,
+        #     max_time = max_time, 
+        #     max_steps = max_steps,
+        #     num_map = num_map,
+        #     com_range = com_range,
+        #     fct_proba = fct_proba,
+        #     fct_sequence = fct_sequence,
+        #     nb_sequence = nb_sequence,
+        #     nb_communication = nb_communication
+        #     )
+        # end
 
     end        
     return nb_steps, abmproperties(model).seen_all_gridmap

@@ -25,14 +25,14 @@ function run(;
     vis_range = 3
     invisible_cells = [0]
     if num_map > 0 
-        f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
+        f = open("../src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
         line_triche = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = [parse(Int64, line_triche)]
-        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
+        nb_obstacles = countlines("../src/maps/map$(num_map).txt") - 2
     end
 
     global model = initialize_model(

@@ -29,7 +29,6 @@ function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_p
         end
         known_cells += 1
         if !transition
-            # model.properties.seen_all_gridmap[pos[1],pos[2],id] = true
             abmproperties(model).seen_all_gridmap[pos[1],pos[2],id] = true
         end
     end

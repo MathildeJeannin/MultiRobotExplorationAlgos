@@ -37,14 +37,14 @@ function run(;
     log = []
     invisible_cells = 0
     if num_map > 0 
-        f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$num_map.txt", "r")
+        f = open("../src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
         line_triche = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = parse(Int64, line_triche)
-        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
+        nb_obstacles = countlines("../src/maps/map$(num_map).txt") - 2
     end
 
     global gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
@@ -158,7 +158,7 @@ function run(;
         # )
     end
 
-    return nb_steps
+    return nb_steps, abmproperties(model).seen_all_gridmap
 
 end
 

@@ -1,6 +1,6 @@
 function add_map(model, map, nb_robots)
     D = 2
-    f = open("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$map.txt", "r")
+    f = open("../src/maps/map$map.txt", "r")
     id = nb_robots+1
     _ = readline(f)
     invisible_cells = parse(Int64, readline(f))
