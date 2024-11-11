@@ -73,7 +73,8 @@ function run(;
     for p in obs
         walkmap[p[1],p[2]] = false
     end
-    pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
+    pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap) # pathfinder pour calculer les distances entre les robots dans les metriques
+    
     # plan_route!(agent, pos, pathfinder)
 
     while (max_knowledge != (extent[1]*extent[2]-abmproperties(model).invisible_cells[1])) && (nb_steps < max_steps)

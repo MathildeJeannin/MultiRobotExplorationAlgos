@@ -67,10 +67,6 @@ function initialize_model(
         known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, [(1,1) for i in 1:nb_robots], vis_range, obstacles_poses, model)
 
         walkmap = BitArray{2}(trues(extent))
-        # obs = [r.pos for r in collect(nearby_obstacles((1,1),model,100))]
-        # for p in obs
-        #     walkmap[p[1],p[2]] = false
-        # end
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
         robot = RobotPosMin{D}(id, pos, vis_range, com_range, gridmap_n, [(1,1) for i in 1:nb_robots], pathfinder, [], Set())
@@ -81,6 +77,7 @@ function initialize_model(
                 robot.pathfinder.walkmap[pos[1],pos[2]] = false
             end
         end
+        
         robot.frontiers, all_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.gridmap, robot.all_robots_pos, robot.frontiers; need_repartition=true)
         goal = positionMinimum(all_frontiers, robot.gridmap, robot.all_robots_pos[Not(robot.id)], robot.pos)
         robot.plan = collect(plan_route!(robot, goal, robot.pathfinder))

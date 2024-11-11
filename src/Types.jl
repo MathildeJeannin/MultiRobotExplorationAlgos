@@ -88,5 +88,11 @@ mutable struct RobotPosMin{D} <: AbstractAgent
     frontiers::Set
 end
 
+mutable struct SharedMemory
+    gridmap::MMatrix
+    frontiers::Set
+    plan::Vector{Vector{Tuple}}
+    pathfinder::Any
+end
 
 Robot = Union{RobotCen,RobotDec,RobotPosMin}
