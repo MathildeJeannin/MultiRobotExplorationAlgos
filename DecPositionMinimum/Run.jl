@@ -25,7 +25,7 @@ function run(;
     vis_range = 3
     invisible_cells = [0]
     if num_map > 0 
-        f = open("../SimulateursExploration/src/maps/map$num_map.txt", "r")
+        f = open("../src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
         line_triche = readline(f)
         close(f)

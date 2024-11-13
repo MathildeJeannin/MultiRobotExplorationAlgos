@@ -36,13 +36,13 @@ function coverage(cov::BitArray{3})
     nb_robots = extent[3]
     nb_cell_vues = 0
     nb_cell = 0
-    for ri in 1:nb_robots
-        for i in 1:extent[1]
-            for j in 1:extent[2]
+    for i in 1:extent[1]
+        for j in 1:extent[2]
+            for ri in 1:nb_robots
                 if cov[i,j,ri]
                     nb_cell_vues += 1
-                    nb_cell += 1
                 end
+                nb_cell += 1
             end
         end
     end

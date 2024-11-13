@@ -1,6 +1,6 @@
 using Observables
-#using GLMakie
-#using GraphMakie
+using GLMakie
+using GraphMakie
 using Graphs
 using InteractiveDynamics
 using DataStructures: CircularBuffer
