@@ -6,12 +6,10 @@ end
 
 @struct_hash_equal mutable struct State 
     id::Int
-    # space_state::space_state
     gridmap::MMatrix
     known_cells::Int64
     seen_cells::Int64
     robots_plans::MVector # vector of Robot_plan
-    frontiers::Set
     nb_coups::Int
 end
 
@@ -38,12 +36,13 @@ struct RobotMDP <: MDP{Union{State,StateCen}, Union{Action,ActionCen}}
     nb_obstacle::Int64
     discount::Float64
     possible_actions::Union{Vector{Action}, Vector{ActionCen}}
+    frontier_frequency::Int
 end
 
 
 @struct_hash_equal mutable struct RobotPlan 
     state::RobotState
-    best_sequences::Vector{Vector{Action}}
+    best_sequences::Vector{MutableLinkedList{Action}}
     assigned_proba::Vector{Float64}
 end
 
@@ -51,6 +50,8 @@ end
 mutable struct RolloutInfo
     in_rollout::Bool
     debut_rollout::Int64
+    frontiers::Set
+    actions_sequence::MutableLinkedList{Action}
 end
 
 
@@ -73,10 +74,11 @@ mutable struct RobotDec{D} <: AbstractAgent
     vis_range::Int
     com_range::Int
     plans::Vector{RobotPlan}
-    rollout_info::RolloutInfo
+    rollout_parameters::RolloutInfo
     state::State
     planner::DPWPlanner
     pathfinder::Any
+    frontiers::Set
 end
 
 

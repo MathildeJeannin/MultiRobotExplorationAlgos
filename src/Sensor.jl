@@ -114,7 +114,7 @@ end
 
 
 function nearby_robots(pos::Tuple, model::ABM, r::Int)
-    return filter(obj->(obj.pos in nearby_positions(pos,model,r) && typeof(obj) != Obstacle{2}), [a for a in allagents(model)])
+    return filter(obj->(obj.pos in nearby_positions(pos,model,r) && typeof(obj) != Obstacle{2}), [model[i] for i in 1:abmproperties(model).nb_robots])
 end
 
 function nearby_robots(agent, model::ABM, r::Int)
@@ -122,7 +122,7 @@ function nearby_robots(agent, model::ABM, r::Int)
 end
 
 function nearby_obstacles(pos::Tuple, model::ABM, r::Int)
-    return filter(obj->(obj.pos in nearby_positions(pos,model,r) && typeof(obj) == Obstacle{2}), [a for a in allagents(model)])
+    return filter(obj->(obj.pos in nearby_positions(pos,model,r) && typeof(obj) == Obstacle{2}), [model[i] for i in (abmproperties(model).nb_robots+1):abmproperties(model).nb_obstacles])
 end
 
 function nearby_obstacles(agent, model::ABM, r::Int)
