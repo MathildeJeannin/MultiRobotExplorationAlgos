@@ -36,6 +36,7 @@ function run(;
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
     nb_communication = 1,
+    frontier_frequency = 20,
     id_expe = 0
     )
 
@@ -82,7 +83,8 @@ function run(;
         begin_zone = (1,1),
         vis_range = vis_range,    
         com_range = com_range,
-        invisible_cells = invisible_cells
+        invisible_cells = invisible_cells,
+        frontier_frequency = frontier_frequency
     )
 
     robots = [model[i] for i in 1:nb_robots]
@@ -100,7 +102,7 @@ function run(;
             observ_best_sequences_list[id] = Vector{Observable}(undef, nb_robots)
             for i in 1:nb_robots
                 observ_pos_list[id][i] = Observable(r.plans[i].state.pos)
-                best_plan = Vector{Action}(undef, 0)
+                best_plan = MutableLinkedList{Action}()
                 observ_best_sequences_list[id][i] = Observable(list_pos(r.state.gridmap, i, [p.state.pos for p in r.plans], r.vis_range, best_plan))
 
             end
@@ -202,7 +204,7 @@ end
 
 
 
-function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action_sequence::Vector{Action})
+function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action_sequence::MutableLinkedList{Action})
     L = Vector{Tuple{Int,Int}}(undef, length(action_sequence)+1)
     L[1] = robots_pos[id]
     for (i,a) in enumerate(action_sequence)

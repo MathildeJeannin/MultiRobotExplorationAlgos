@@ -22,7 +22,8 @@ function initialize_model(
     begin_zone = (1,1), 
     vis_range = 3.0,
     com_range = 2.0,
-    invisible_cells = 0
+    invisible_cells = 0, 
+    frontier_frequency = 1
 )
     gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
     # seen_gridmap = MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent)))
@@ -40,7 +41,8 @@ function initialize_model(
     properties = (
         seen_all_gridmap = BitArray{3}(falses((extent[1],extent[2],nb_robots))),
         nb_obstacles, 
-        invisible_cells
+        invisible_cells,
+        nb_robots
     )
 
     global model = AgentBasedModel(Union{RobotDec{D}, Obstacle{D}}, space; agent_step!,
@@ -68,7 +70,7 @@ function initialize_model(
 
     robots_plans = MVector{nb_robots, RobotPlan}([RobotPlan(RobotState(i,(1,1)), Vector{Vector{Tuple{Int,Action}}}(undef, 0), Vector{Float64}(undef, 0)) for i in 1:nb_robots])
 
-    for n ∈ 1:nb_robots
+    for n in 1:nb_robots
         pos = (rand(T1),rand(T2))
         id = n
         isObstacle = false
@@ -82,21 +84,21 @@ function initialize_model(
 
         known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, [p.state.pos for p in robots_plans], vis_range, obstacles_poses, model; seen_cells = 0)
 
-        state = State(id, gridmap_n, known_cells, seen_cells, deepcopy(robots_plans), Set(), 0)
+        state = State(id, gridmap_n, known_cells, seen_cells, deepcopy(robots_plans), 0)
 
-        mdp = RobotMDP(vis_range, nb_obstacles, discount, possible_actions)
+        mdp = RobotMDP(vis_range, nb_obstacles, discount, possible_actions, frontier_frequency)
 
-        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
+        # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
         my_policy = FrontierPolicy(mdp)
 
-        # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(my_policy))
+        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(my_policy))
 
         planner = solve(solver, mdp)
 
         walkmap = BitArray{2}(trues(extent[1],extent[2]))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        agent = RobotDec{D}(id, pos, vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{Vector{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0), state, planner, pathfinder)
+        agent = RobotDec{D}(id, pos, vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), MutableLinkedList{Action}()), state, planner, pathfinder, Set())
         add_agent!(agent, pos, model)
     end
 
@@ -107,7 +109,7 @@ function initialize_model(
             exchange_positions!(robot, r)
         end
 
-        robot.state.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.state.frontiers, need_repartition=false)
+        robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
     end
 
     return model
@@ -135,15 +137,13 @@ function agents_simulate!(robot, model, alpha, beta;
                 exchange_frontiers!(robot,r)
             end
 
-            robot.state.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.state.frontiers, need_repartition=false)
-
-            robot.rollout_info.debut_rollout = robot.state.nb_coups
-            robot.rollout_info.in_rollout = true
+            robot.rollout_parameters.debut_rollout = robot.state.nb_coups
+            robot.rollout_parameters.in_rollout = true
             # try 
                 action_info(robot.planner, robot.state)
             # catch e
             # end
-            robot.rollout_info.in_rollout = false
+            robot.rollout_parameters.in_rollout = false
 
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
 
@@ -161,7 +161,7 @@ function agent_step!(robot, model, vis_tree)
     if robot.state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
 
         if !isempty(robot.plans[robot.id].best_sequences)
-            a = robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]][1]
+            a = first(robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]])
         else
             a = rand(robot.planner.mdp.possible_actions)
         end
@@ -182,11 +182,13 @@ function agent_step!(robot, model, vis_tree)
 
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
 
-        robot.state = State(robot.id, robot.state.gridmap, robot.state.known_cells, robot.state.seen_cells, robot.state.robots_plans, robot.state.frontiers, robot.state.nb_coups+1)
+        robot.state = State(robot.id, robot.state.gridmap, robot.state.known_cells, robot.state.seen_cells, robot.state.robots_plans, robot.state.nb_coups+1)
 
         robot.state.known_cells, robot.state.seen_cells = gridmap_update!(robot.state.gridmap, robot.state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.seen_cells)
 
-        robot.state.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.state.frontiers, need_repartition=false)
+        robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
+
+        pathfinder_update!(robot.pathfinder, robot.state.gridmap)
 
         if vis_tree
             inchrome(D3Tree(robot.planner.tree, init_expand=4))

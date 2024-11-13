@@ -63,9 +63,13 @@ function select_sequences(r::Robot, N::Int64, roll::Bool, compute_proba::Functio
         compteur += 1 
     end
 
-    actions_sequences = Vector{Vector{Action}}(undef, length(index_actions_sequences))
+    actions_sequences = Vector{MutableLinkedList{Action}}(undef, length(index_actions_sequences))
     for (k,index_sequence) in enumerate(index_actions_sequences)
-        actions_sequences[k] = [r.planner.tree.a_labels[index] for index in index_sequence]
+        # actions_sequences[k] = [r.planner.tree.a_labels[index] for index in index_sequence]
+        actions_sequences[k] = MutableLinkedList{Action}()
+        for index in index_sequence
+            append!(actions_sequences[k], r.planner.tree.a_labels[index])
+        end
     end
 
     assigned_proba = compute_proba(index_actions_sequences, r)
@@ -176,17 +180,17 @@ end
 function select_best_sequences(r::Robot)
     rng = MersenneTwister(rand(1:1000000))
     nb_robots = length(r.state.robots_plans) 
-    sequences = Vector{Vector{Vector{Action}}}(undef, nb_robots)
+    sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, nb_robots)
     states = Vector{RobotState}(undef, nb_robots)
     for plan in r.plans
         if plan.state.id != r.id
-            if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1])
+            if !isempty(plan.best_sequences) && !isempty(first(plan.best_sequences))
                 distribution = SparseCat([i for i in eachindex(plan.assigned_proba)], [q for q in plan.assigned_proba])
                 seq_index = rand(rng, distribution)
                 sequences[plan.state.id] = deepcopy([plan.best_sequences[seq_index]])
                 states[plan.state.id] = deepcopy(plan.state)
             else
-                sequences[plan.state.id] = Vector{Vector{Action}}(undef, 0)
+                sequences[plan.state.id] = Vector{MutableLinkedList{Action}}(undef, 0)
                 states[plan.state.id] = deepcopy(plan.state)
             end
         end
@@ -199,7 +203,7 @@ function esperance_fr(r::Robot)
     depth = r.planner.solver.depth
     esp = 0
     s = deepcopy(r.state)
-    sequences = Vector{Vector{Vector{Action}}}(undef, length(r.plans))
+    sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, length(r.plans))
     proba = Vector{Vector{Float64}}(undef, length(r.plans))
     for i in eachindex(sequences)
         sequences[i] = r.plans[i].best_sequences
@@ -220,10 +224,10 @@ function esperance_fr(r::Robot)
 end
 
 
-function esperance_fr_xr(r::Robot, xr::Vector{Action}, qr::Float64)
+function esperance_fr_xr(r::Robot, xr::MutableLinkedList{Action}, qr::Float64)
     esp = 0
     s = deepcopy(r.state)
-    sequences = Vector{Vector{Vector{Action}}}(undef, length(r.plans))
+    sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, length(r.plans))
     proba = Vector{Vector{Float64}}(undef, length(r.plans))
     for i in eachindex(sequences)
         if i==r.id
@@ -261,7 +265,7 @@ end
 function simulate_reward(s::State, planner::DPWPlanner, discount::Float64, compteur::Int64)
     id = s.id
     if length(s.robots_plans[id].best_sequences[1]) >= compteur
-        action = s.robots_plans[id].best_sequences[1][compteur]
+        action = getindex(s.robots_plans[id].best_sequences[1], compteur)
         sp, r = @gen(:sp, :r)(planner.mdp, s, action, planner.rng)
         return r + discount*simulate_reward(sp, planner, discount, compteur + 1)
     else
