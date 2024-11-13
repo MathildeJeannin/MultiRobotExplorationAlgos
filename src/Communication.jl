@@ -77,8 +77,10 @@ function exchange_frontiers!(r1::RobotPosMin, r2::RobotPosMin)
 end
 
 function exchange_frontiers!(r1::RobotDec, r2::RobotDec)
-    frontiers = r1.state.frontiers
-    for f in frontiers
-        push!(r2.state.frontiers, f)
+    r1frontiers = r1.rollout_parameters.frontiers
+    r2frontiers = r2.rollout_parameters.frontiers
+    for f in r2frontiers
+        push!(r1frontiers, f)
     end
+    r1.rollout_parameters.frontiers = r1frontiers
 end
