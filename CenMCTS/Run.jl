@@ -6,6 +6,7 @@ include("MDP.jl")
 include("../src/Maps.jl")
 include("Robot.jl")
 include("../src/Sensor.jl")
+include("../src/FrontierDetection.jl")
 
 function run(; 
     alpha_state = 1.0, 
@@ -48,10 +49,9 @@ function run(;
         nb_obstacles = [countlines("../src/maps/map$(num_map).txt") - 2]
     end
 
-    global gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
-    seen_gridmap = MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent)))
     
-    global model = initialize_model(;
+    
+    global model, state = initialize_model(;
         N = nb_robots,                 # number of agents
         extent = extent,               # size of the world
         begin_zone = (1,1),
@@ -59,46 +59,27 @@ function run(;
         com_range = com_range,       # communication range
         seed = rand(1:10^39), 
         nb_obstacles = nb_obstacles, 
-        invisible_cells = invisible_cells
+        invisible_cells = invisible_cells,
+        num_map = num_map,
+        frontier_frequency = frontier_frequency,
+        discount = discount,
+        n_iterations = n_iterations,
+        depth = depth,
+        alpha_state = alpha_state, 
+        k_state = k_state, 
+        alpha_action = alpha_action,
+        k_action = k_action,
+        exploration_constant = exploration_constant,  
+        keep_tree = keep_tree, 
+        max_time = max_time, 
+        show_progress = show_progress,
+        max_steps = max_steps
     )
 
-    if num_map > 0
-        add_map(model, num_map, nb_robots)
-    elseif num_map < 0
-        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
-    else
-        add_obstacles(model; N = nb_obstacles[1], extent = extent)
-    end
-
-    allObjects = allagents(model)
-
-    robots_states = Vector{RobotState}(undef, nb_robots)
     robots = [model[i] for i in 1:nb_robots]
+    gridmap = state.gridmap
 
-    for (i,r) in enumerate(robots)
-        id = r.id
-        robots_states[id] = RobotState(r.id, r.pos)
-    end
-
-    all_robots_pos = [r.pos for r in robots]
-    for robot in robots
-        obstacles = nearby_obstacles(robot, model, robot.vis_range)
-        obstacles_pos = [element.pos for element in obstacles]
-
-        gridmap_update!(gridmap, 0, robot.id, all_robots_pos, robot.vis_range, obstacles_pos, model)
-    end
-
-    possible_actions = compute_actions(nb_robots)
-
-    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, frontier_frequency)
-
-    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant)
-
-    global planner = solve(solver, mdp)
-
-    state = StateCen(gridmap, robots_states, 0)
-
-    push!(log, [copy(state.robots_states), copy(state.gridmap)])
+    push!(log, [copy(state.robots_states), copy(gridmap)])
 
     if vis_figure
         observ_map = Observable(Matrix(gridmap))

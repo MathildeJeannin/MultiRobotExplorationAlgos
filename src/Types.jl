@@ -51,7 +51,7 @@ mutable struct RolloutInfo
     in_rollout::Bool
     debut_rollout::Int64
     frontiers::Set
-    actions_sequence::MutableLinkedList{Action}
+    actions_sequence::Union{MutableLinkedList{Action}, Vector{ActionCen}}
 end
 
 
@@ -65,6 +65,8 @@ mutable struct RobotCen{D} <: AbstractAgent
     id::Int
     pos::NTuple{D,Int}
     vis_range::Int
+    pathfinder::Any
+    frontiers::Set
 end
 
 
