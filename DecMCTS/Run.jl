@@ -21,7 +21,7 @@ function run(;
     n_iterations = 500, 
     keep_tree = false, 
     discount = 0.85, 
-    nb_obstacles = 0, 
+    nb_obstacles = [0], 
     nb_robots = 3,
     extent = (15,15),
     vis_figure = false,
@@ -37,6 +37,7 @@ function run(;
     nb_sequence = 3,
     nb_communication = 1,
     frontier_frequency = 20,
+    alpha = 0.01,
     id_expe = 0
     )
 
@@ -59,7 +60,7 @@ function run(;
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = [parse(Int64, line_triche)]
-        nb_obstacles = countlines("../src/maps/map$(num_map).txt") - 2
+        nb_obstacles = [countlines("../src/maps/map$(num_map).txt") - 2]
     end
 
     global model = initialize_model(
@@ -127,7 +128,7 @@ function run(;
 
         
         @threads for robot in robots 
-            agents_simulate!(robot, model, 0.01, 1-(nb_steps-1)/max_steps; fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, nb_communication = nb_communication)
+            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, nb_communication = nb_communication)
         end
 
         # wait_for_key("press any key to continue")

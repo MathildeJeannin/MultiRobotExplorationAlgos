@@ -9,7 +9,7 @@ function initialize_model(;
     vis_range = 2.0,       # visibility range
     com_range = 2.0,       # communication range
     nb_obstacles = 0,
-    invisible_cells = 0,
+    invisible_cells = [0],
     seed = 1               # random seed
 )
 
@@ -28,7 +28,8 @@ function initialize_model(;
     properties = (
         seen_all_gridmap = BitArray{3}(falses((extent[1],extent[2],nb_robots))),
         nb_obstacles, 
-        invisible_cells
+        invisible_cells,
+        nb_robots
     )
 
 

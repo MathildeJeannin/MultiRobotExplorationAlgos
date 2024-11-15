@@ -16,7 +16,7 @@ function run(;
     n_iterations = 1000, 
     keep_tree = false, 
     discount = 0.85, 
-    nb_obstacles = 0, 
+    nb_obstacles = [0], 
     nb_robots = 3,
     extent = (15,15),
     vis_figure = false,
@@ -28,6 +28,7 @@ function run(;
     num_map = -1, 
     com_range = 10,
     penalite = false,
+    frontier_frequency = 5,
     id_expe = 0
     )
 
@@ -35,7 +36,7 @@ function run(;
 
     vis_range = 3
     log = []
-    invisible_cells = 0
+    invisible_cells = [0]
     if num_map > 0 
         f = open("../src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
@@ -43,8 +44,8 @@ function run(;
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = parse(Int64, line_triche)
-        nb_obstacles = countlines("../src/maps/map$(num_map).txt") - 2
+        invisible_cells = [parse(Int64, line_triche)]
+        nb_obstacles = [countlines("../src/maps/map$(num_map).txt") - 2]
     end
 
     global gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
@@ -64,9 +65,9 @@ function run(;
     if num_map > 0
         add_map(model, num_map, nb_robots)
     elseif num_map < 0
-        invisible_cells = add_simple_obstacles(model, extent; N = 1)
+        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
     else
-        add_obstacles(model; N = nb_obstacles, extent = extent)
+        add_obstacles(model; N = nb_obstacles[1], extent = extent)
     end
 
     allObjects = allagents(model)
@@ -89,7 +90,7 @@ function run(;
 
     possible_actions = compute_actions(nb_robots)
 
-    mdp = RobotMDP(vis_range, nb_obstacles, discount, possible_actions)
+    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, frontier_frequency)
 
     solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant)
 
@@ -119,7 +120,7 @@ function run(;
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
     nb_steps = 0
-    while (count(i->i!=-2, gridmap) != (extent[1]*extent[2]-invisible_cells)) && (nb_steps < max_steps)
+    while (count(i->i!=-2, gridmap) != (extent[1]*extent[2]-invisible_cells[1])) && (nb_steps < max_steps)
     # while (count(i->i!=-2, gridmap) != (extent[1]*extent[2])) && nb_steps < max_steps
         nb_steps += 1
         t0 = time()

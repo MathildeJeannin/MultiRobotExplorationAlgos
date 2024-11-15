@@ -34,6 +34,7 @@ function add_simple_obstacles(model, extent, nb_robots; N = 1, min_obstacle_size
     ids = nb_robots
 
     invisible_cells = 0 
+    nb_obstacles = 0 
 
     while count < N && attempts < 100
         attempts += 1
@@ -51,11 +52,12 @@ function add_simple_obstacles(model, extent, nb_robots; N = 1, min_obstacle_size
                     ids += 1
                     agent = Obstacle{2}(ids, (i,j))
                     add_agent!(agent, (i,j), model)
+                    nb_obstacles += 1 
                 end
             end
         end
     end
-    return invisible_cells
+    return invisible_cells, nb_obstacles
 end
    
 

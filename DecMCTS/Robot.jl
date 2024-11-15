@@ -22,7 +22,7 @@ function initialize_model(
     begin_zone = (1,1), 
     vis_range = 3.0,
     com_range = 2.0,
-    invisible_cells = 0, 
+    invisible_cells = [0], 
     frontier_frequency = 1
 )
     gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
@@ -53,11 +53,11 @@ function initialize_model(
 
     #obstacles
     if num_map == 0
-        add_obstacles(model, nb_robots; N = nb_obstacles, extent = extent)
+        add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
     else 
-        abmproperties(model).invisible_cells[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
+        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
     end
 
     theta = [i*pi/4 for i in 0:7]
@@ -86,7 +86,7 @@ function initialize_model(
 
         state = State(id, gridmap_n, known_cells, seen_cells, deepcopy(robots_plans), 0)
 
-        mdp = RobotMDP(vis_range, nb_obstacles, discount, possible_actions, frontier_frequency)
+        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, frontier_frequency)
 
         # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
         my_policy = FrontierPolicy(mdp)
