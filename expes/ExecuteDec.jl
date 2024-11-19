@@ -22,7 +22,21 @@ N = parse(Int64, ARGS[14])
 
 t0 = now()
 
-nb_steps, cov = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, com_range=com_range)
+folder = "/alpha_state=$alpha_state,k_state=$k_state,alpha_action=$alpha_action,k_action=$k_action,exploration_constant=$exploration_constant,n_iterations=$n_iterations,keep_tree=$keep_tree,discount=$discount,nb_robots=$nb_robots,depth=$depth,max_steps=$max_steps,num_map=$num_map,com_range=$com_range/"
+
+file = folder*"$(N)_$(t0).csv"
+
+
+try
+    mkdir("Resultats/Dec"*folder)
+catch e
+end
+try
+    mkdir("Logs/Dec"*folder)
+catch e
+end
+
+nb_steps, cov = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, com_range=com_range, file="Logs/Dec"*folder, id_expe=N)
 
 # list_pos = Vector{Vector{robot_state}}(undef, length(log))
 # list_gridmap = Vector{MMatrix}(undef, length(log))
@@ -36,17 +50,27 @@ function coverage(cov::BitArray{3})
     extent = size(cov)
     nb_robots = extent[3]
     nb_cell_vues = 0
-    nb_cell = 0
-    for ri in 1:nb_robots
-        for i in 1:extent[1]
-            for j in 1:extent[2]
+    gridmap_cov = MMatrix{extent[1],extent[2]}(zeros(extent[1],extent[2]))
+    for i in 1:extent[1]
+        for j in 1:extent[2]
+            for ri in 1:nb_robots
                 if cov[i,j,ri]
+                    gridmap_cov[i,j] += 1
                     nb_cell_vues += 1
-                    nb_cell += 1
                 end
             end
         end
     end
+
+    nb_cell = extent[1]*extent[2]
+    for i in 1:extent[1]
+        for j in 1:extent[2]
+            if gridmap_cov[i,j] == 0
+                nb_cell -= 1
+            end
+        end
+    end
+
     nb_cell_vues = nb_cell_vues/nb_cell
     return nb_cell_vues
 end
@@ -55,18 +79,8 @@ nb_cell_vues = coverage(cov)
 
 df = DataFrame(alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, com_range=com_range, nb_steps = nb_steps, nb_cell_vues=nb_cell_vues)
 
-# df_log = DataFrame(pos = list_pos, gridmap = list_gridmap)
+CSV.write("Resultats/Dec"*file, df, writeheader=true, delim = ';', append=true)
 
-try 
-    mkdir("Resultats/Dec/alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, com_range=$com_range/")
-    # mkdir("Logs/Dec/alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, com_range=$com_range/")
-catch e 
-end
-
-CSV.write("Resultats/Dec/alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, com_range=$com_range/$(N)_$(t0).csv", df, delim = ';', append=true)
-
-# CSV.write("Logs/Dec/alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, com_range=$com_range/$(N)_$(t0).csv",  df_log, delim = ';', append=true)
-
-file = open("Resultats/Dec/log_julia.txt", "a")
-write(file, "run $(N); time = $(t0); alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, com_range=$com_range, nb_steps = $(nb_steps), nb_cell_vues = $nb_cell_vues")
-close(file)
+log_file = open("Resultats/Dec/log_julia.txt", "a")
+write(log_file, "run $(N); time = $(t0); alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, com_range=$com_range, nb_steps = $(nb_steps), nb_cell_vues = $nb_cell_vues")
+close(log_file)

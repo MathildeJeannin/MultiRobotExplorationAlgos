@@ -30,7 +30,8 @@ function run(;
     com_range = 10,
     penalite = false,
     frontier_frequency = 5,
-    id_expe = 0
+    id_expe = 0,
+    file = ""
     )
 
     global use_penalite = penalite
@@ -79,8 +80,6 @@ function run(;
     robots = [model[i] for i in 1:nb_robots]
     gridmap = state.gridmap
 
-    push!(log, [copy(state.robots_states), copy(gridmap)])
-
     if vis_figure
         observ_map = Observable(Matrix(gridmap))
         observ_pos_list = Array{Observable}(undef,nb_robots)
@@ -114,30 +113,28 @@ function run(;
                 observ_traj_list[id][] = push!(observ_traj_list[id][], Point2f(rob.pos))
             end
         end
-
-        # if nb_steps > max_steps/3
-        #     check_for_invisible_obstacles!(gridmap)
-        # end
         
         vis_figure ? observ_map[] = Matrix(gridmap) : nothing
-        # add_metrics(model, state, pathfinder, id_expe;
-        #     alpha_state = alpha_state, 
-        #     k_state = k_state , 
-        #     alpha_action = alpha_action ,
-        #     k_action = k_action,
-        #     exploration_constant = exploration_constant, 
-        #     n_iterations = n_iterations, 
-        #     keep_tree = keep_tree, 
-        #     discount = discount, 
-        #     nb_obstacles = nb_obstacles, 
-        #     nb_robots = nb_robots,
-        #     extent = extent,
-        #     depth = depth,
-        #     max_time = max_time, 
-        #     max_steps = max_steps,
-        #     num_map = num_map,
-        #     invisible_cells = invisible_cells
-        # )
+        if id_expe > 0 && file != ""
+            add_metrics(model, state, pathfinder, file, id_expe;
+                alpha_state = alpha_state, 
+                k_state = k_state , 
+                alpha_action = alpha_action ,
+                k_action = k_action,
+                exploration_constant = exploration_constant, 
+                n_iterations = n_iterations, 
+                keep_tree = keep_tree, 
+                discount = discount, 
+                nb_obstacles = nb_obstacles, 
+                nb_robots = nb_robots,
+                extent = extent,
+                depth = depth,
+                max_time = max_time, 
+                max_steps = max_steps,
+                num_map = num_map,
+                invisible_cells = invisible_cells[1]
+            )
+        end
     end
 
     return nb_steps, abmproperties(model).seen_all_gridmap
@@ -145,44 +142,7 @@ function run(;
 end
 
 
-
-function _compare_log_infotree(log, tree)
-    log_tree = [tree.s_labels[N] for N in findall(x->x>1000, tree.total_n)]
-    nb_robots = length(log_tree[1].robot_list)
-
-    for i in 1:min(length(log), length(log_tree))
-        println("Step $(i)\n")
-        println(log_tree[i].gridmap == log[i][2])
-        println("\ntree : ")
-        _print_gridmap(log_tree[i].gridmap, [log_tree[i].robot_list[j].pos for j in 1:nb_robots])
-        println("log : ")
-        _print_gridmap(log[i][2], [log[i][1][j].pos for j in 1:nb_robots])
-    end
-end
-
-
-function _print_log(log)
-    println("Log : ")
-    for element in log
-        gridmap = element[2]
-        poses = [element[1][i].pos for i in 1:2]
-        _print_gridmap(gridmap, poses)
-    end
-end
-
-
-function _print_tree(tree, param_findall)
-    N = param_findall
-    println("Tree : ")
-    for N in findall(x->x>1000, tree.total_n)
-        gridmap = tree.s_labels[N].gridmap
-        poses = [tree.s_labels[N].robots_states[i].pos for i in 1:length(tree.s_labels[N].robots_states)]
-        _print_gridmap(gridmap, poses)
-    end
-end
-
-
-function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfinding.AStar{2}, id_expe::Int;
+function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfinding.AStar{2}, file::String, id_expe::Int;
     alpha_state = 1.0, 
     k_state = 500.0, 
     alpha_action = 1.0,
@@ -201,14 +161,14 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
     invisible_cells = invisible_cells
     )
     robots = [model[i] for i in 1:nb_robots]
-    extent = size(gridmap)
+    extent = size(state.gridmap)
 
     percent_of_map = zeros(1)
     astar_distances = zeros((length(robots), length(robots)))
     euclidean_distances = zeros((length(robots), length(robots)))
     
-    percent_of_map[1] = count(x->x!=-2, gridmap)/(extent[1]*extent[2]-invisible_cells)
-    df = DataFrame("nbsteps" => state.nb_coups, "percentofmapall" => percent_of_map[1])
+    percent_of_map[1] = count(x->x!=-2, state.gridmap)/(extent[1]*extent[2]-invisible_cells)
+    df = DataFrame("nbsteps" => state.nb_coups, "percentofmapall" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap])
 
     for robot in robots
 
@@ -219,7 +179,7 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
             euclidean_distances[robot_prime.id, robot.id] = euclidean_distances[robot.id, robot_prime.id]
         end
 
-        df = innerjoin(df, DataFrame("nbsteps" => state.nb_coups, "astardistances$(robot.id)" => [astar_distances[robot.id,:]], "euclideandistances$(robot.id)" =>[euclidean_distances[robot.id,:]], "gridmap$(robot.id)" => [gridmap]), on = "nbsteps")
+        df = innerjoin(df, DataFrame("nbsteps" => state.nb_coups, "astardistances$(robot.id)" => [astar_distances[robot.id,:]], "euclideandistances$(robot.id)" =>[euclidean_distances[robot.id,:]]), on = "nbsteps")
         
     end
 
@@ -227,7 +187,6 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
     if  state.nb_coups == 1
         write_header = true
     end
-    # CSV.write("Logs/$alpha$(alpha_action)_k$(k_action)_map$(num_map)/$(N).csv", df, delim = ';', header = write_header, append=true)
-    # println(df)
+    CSV.write(file*"$(id_expe).csv", df, delim = ';', header = write_header, append=true)
 
 end

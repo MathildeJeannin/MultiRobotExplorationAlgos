@@ -38,6 +38,7 @@ function run(;
     nb_communication = 1,
     frontier_frequency = 20,
     alpha = 0.01,
+    file = "",
     id_expe = 0
     )
 
@@ -159,30 +160,30 @@ function run(;
         end
         max_knowledge = maximum([r.state.known_cells for r in robots])
 
-        # if id_expe!=0
-        #     add_metrics(model, pathfinder, id_expe;
-        #     alpha_state = alpha_state, 
-        #     k_state = k_state , 
-        #     alpha_action = alpha_action ,
-        #     k_action = k_action,
-        #     exploration_constant = exploration_constant, 
-        #     n_iterations = n_iterations, 
-        #     keep_tree = keep_tree, 
-        #     discount = discount, 
-        #     nb_obstacles = nb_obstacles, 
-        #     nb_robots = nb_robots,
-        #     extent = extent,
-        #     depth = depth,
-        #     max_time = max_time, 
-        #     max_steps = max_steps,
-        #     num_map = num_map,
-        #     com_range = com_range,
-        #     fct_proba = fct_proba,
-        #     fct_sequence = fct_sequence,
-        #     nb_sequence = nb_sequence,
-        #     nb_communication = nb_communication
-        #     )
-        # end
+        if id_expe!=0 && file != ""
+            add_metrics(model, pathfinder, file, id_expe;
+            alpha_state = alpha_state, 
+            k_state = k_state , 
+            alpha_action = alpha_action ,
+            k_action = k_action,
+            exploration_constant = exploration_constant, 
+            n_iterations = n_iterations, 
+            keep_tree = keep_tree, 
+            discount = discount, 
+            nb_obstacles = nb_obstacles, 
+            nb_robots = nb_robots,
+            extent = extent,
+            depth = depth,
+            max_time = max_time, 
+            max_steps = max_steps,
+            num_map = num_map,
+            com_range = com_range,
+            fct_proba = fct_proba,
+            fct_sequence = fct_sequence,
+            nb_sequence = nb_sequence,
+            nb_communication = nb_communication
+            )
+        end
 
     end        
     return nb_steps, abmproperties(model).seen_all_gridmap
@@ -217,7 +218,7 @@ function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVect
 end
 
 
-function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_expe::Int;
+function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file::String, id_expe::Int;
     alpha_state = 1.0, 
     k_state = 500.0, 
     alpha_action = 1.0,
@@ -246,12 +247,12 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
     astar_distances = zeros((length(robots), length(robots)))
     euclidean_distances = zeros((length(robots), length(robots)))
     
-    percent_of_map[end] = count(x->any(x), [abmproperties(model).seen_all_gridmap[i,j,:] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles)
+    percent_of_map[end] = count(x->any(x), [abmproperties(model).seen_all_gridmap[i,j,:] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
     df = DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_all" => percent_of_map[end])
 
     for robot in robots
 
-        percent_of_map[robot.id] = count(x->x, [abmproperties(model).seen_all_gridmap[i,j,robot.id] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles)
+        percent_of_map[robot.id] = count(x->x, [abmproperties(model).seen_all_gridmap[i,j,robot.id] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
 
         for robot_prime in filter(x->x.id!=robot.id,robots[robot.id+1:end])
             astar_distances[robot.id, robot_prime.id] = length(plan_route!(robot, robot_prime.pos, pathfinder))
@@ -268,7 +269,6 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
     if  robots[1].state.nb_coups == 1
         write_header = true
     end
-    CSV.write("Logs/nummap$(num_map)_extent$(extent1)$(extent2)/$(N).csv", df, delim = ';', header = write_header, append=true)
-
+    CSV.write(file*"$(id_expe).csv", df, delim = ';', header = write_header, append=true)
 
 end

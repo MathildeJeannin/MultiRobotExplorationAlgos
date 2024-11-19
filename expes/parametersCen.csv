@@ -1,2 +1,3 @@
 alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map
-1,500,1,1,1,1000,0,0.85,3,50,100,2
+1,1,1,1,1,1500,0,0.85,3,50,100,2
+1,1,1,1,1,1500,0,0.85,3,50,100,3

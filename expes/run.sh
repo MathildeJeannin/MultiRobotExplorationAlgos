@@ -3,17 +3,17 @@
 mkdir Resultats
 mkdir Resultats/Cen
 mkdir Resultats/Dec
-# mkdir Logs
-# mkdir Logs/Cen
-# mkdir Logs/Dec
+mkdir Logs
+mkdir Logs/Cen
+mkdir Logs/Dec
 
 # echo "Executing file for first compilation" 
 # julia Execute.jl $alpha_state $k_state $exploration_constant $n_iterations $keep_tree $discount
 # echo "Finished executing"
 
 n=0
-ni=20
-nj=5
+ni=2
+nj=2
 start=1
 
 # chaque parametre est testé ni*nj fois et il y a nj simulations lancées en même temps
@@ -41,8 +41,8 @@ echo "All done" >> log_bashCen.txt
 
 
 n=0
-ni=20
-nj=5
+ni=2
+nj=2
 start=1
 
 while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 

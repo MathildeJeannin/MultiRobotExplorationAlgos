@@ -77,5 +77,5 @@ function exchange_frontiers!(r1::RobotPosMin, r2::RobotPosMin)
 end
 
 function exchange_frontiers!(r1::RobotDec, r2::RobotDec)
-    r1.frontiers = r1.rollout_parameters.frontier_cells = union(r1.frontiers, r2.frontiers)
+    r1.frontiers = r1.rollout_parameters.frontiers = union(r1.frontiers, r2.frontiers)
 end
