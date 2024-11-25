@@ -22,9 +22,8 @@ function initialize_model(
     begin_zone = (1,1), 
     vis_range = 3.0,
     com_range = 2.0,
-    invisible_cells = [0], 
-    frontier_frequency = 1
-)
+    invisible_cells = [0]
+    )
     gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
     # seen_gridmap = MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent)))
 
@@ -86,7 +85,7 @@ function initialize_model(
 
         state = State(id, gridmap_n, known_cells, seen_cells, deepcopy(robots_plans), 0)
 
-        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, frontier_frequency)
+        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions)
 
         # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
         my_policy = FrontierPolicy(mdp)
@@ -109,7 +108,7 @@ function initialize_model(
             exchange_positions!(robot, r)
         end
 
-        # robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
+        robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
     end
 
     return model
@@ -139,10 +138,10 @@ function agents_simulate!(robot, model, alpha, beta;
 
             robot.rollout_parameters.debut_rollout = robot.state.nb_coups
             robot.rollout_parameters.in_rollout = true
-            # try 
+            try 
                 action_info(robot.planner, robot.state)
-            # catch e
-            # end
+            catch e
+            end
             robot.rollout_parameters.in_rollout = false
 
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
@@ -186,7 +185,7 @@ function agent_step!(robot, model, vis_tree)
 
         robot.state.known_cells, robot.state.seen_cells = gridmap_update!(robot.state.gridmap, robot.state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.seen_cells)
 
-        # robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
+        robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
 
         pathfinder_update!(robot.pathfinder, robot.state.gridmap)
 

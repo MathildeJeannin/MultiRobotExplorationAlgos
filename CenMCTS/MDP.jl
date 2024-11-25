@@ -32,11 +32,6 @@ function POMDPs.transition(m::RobotMDP, s::StateCen, a::ActionCen)
             all_robots_pos[rs.id] = next_pos
 
             gridmap_update!(next_gridmap, 0, rs.id, all_robots_pos, m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
-
-            # if (s.nb_coups-1)%m.frontier_frequency == 0
-            #     abmproperties(model).rollout_parameters.frontiers = frontierDetection(rs.id, rs.pos, m.vis_range, next_gridmap, [x.pos for x in s.robots_states], abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
-            # end
-
         end      
 
         sp = StateCen(next_gridmap, next_robots_states, s.nb_coups+1)
@@ -105,7 +100,7 @@ function POMDPs.action(rollout_policy::FrontierPolicy, s::StateCen)
     end
 
     if isempty(abmproperties(model).rollout_parameters.actions_sequence)
-        frontiers = abmproperties(model).rollout_parameters.frontiers
+        frontiers = abmproperties(model).rollout_parameters.frontiers = frontierDetectionMCTS(abmproperties(model).rollout_parameters.frontiers, s.gridmap, need_repartition=false)
         abmproperties(model).rollout_parameters.actions_sequence = Vector{ActionCen}(undef, 0)
 
         for robot in robots

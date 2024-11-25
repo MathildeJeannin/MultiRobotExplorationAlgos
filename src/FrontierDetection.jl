@@ -40,6 +40,29 @@ function frontierDetection(id::Int, pos::Tuple, vis_range::Int, gridmap::MMatrix
 end
 
 
+function frontierDetectionMCTS(gridmap::MMatrix, frontiers::Set; need_repartition=true)
+    extent = size(gridmap)  
+    for i in 1:extent[1]
+        for j in 1:extent[2]
+            if isFrontier((i,j), gridmap)
+                push!(frontiers, (i,j))
+            end
+        end
+    end
+
+    for f in frontiers
+        if !isFrontier(f,gridmap)
+            delete!(frontiers, f)
+        end
+    end
+    if need_repartition
+        return frontiers, frontierRepartition(gridmap, frontiers)
+    else
+        return frontiers
+    end
+end
+
+
 function isFrontier(f::Tuple, gridmap::MMatrix)
     x,y = f
     extent = size(gridmap)

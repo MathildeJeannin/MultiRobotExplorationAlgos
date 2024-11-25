@@ -36,7 +36,6 @@ struct RobotMDP <: MDP{Union{State,StateCen}, Union{Action,ActionCen}}
     nb_obstacle::Int64
     discount::Float64
     possible_actions::Union{Vector{Action}, Vector{ActionCen}}
-    frontier_frequency::Int
 end
 
 

@@ -12,7 +12,6 @@ function initialize_model(;
     invisible_cells = [0],
     seed = 1,               # random seed
     num_map = 0,
-    frontier_frequency = 5,
     discount = 0.85,
     n_iterations = 1500,
     depth = 50,
@@ -97,12 +96,12 @@ function initialize_model(;
 
         pathfinder_update!(robot.pathfinder, gridmap)
 
-        # robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, gridmap, [x.pos for x in robots_states], robot.frontiers; need_repartition=false)
+        robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, gridmap, [x.pos for x in robots_states], robot.frontiers; need_repartition=false)
     end
 
     possible_actions = compute_actions(nb_robots)
 
-    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, frontier_frequency)
+    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions)
 
     solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant)
 
@@ -155,7 +154,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
         obstacles_pos = [element.pos for element in obstacles]
         gridmap_update!(next_gridmap, 0, robot.id, all_robots_pos, vis_range, obstacles_pos, model)
 
-        # robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, next_gridmap, all_robots_pos, robot.frontiers; need_repartition=false)
+        robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, next_gridmap, all_robots_pos, robot.frontiers; need_repartition=false)
 
         all_frontiers = union(all_frontiers, robot.frontiers) 
     end

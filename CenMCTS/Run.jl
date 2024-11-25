@@ -29,7 +29,6 @@ function run(;
     num_map = -1, 
     com_range = 10,
     penalite = false,
-    frontier_frequency = 10,
     id_expe = 0,
     file = ""
     )
@@ -62,7 +61,6 @@ function run(;
         nb_obstacles = nb_obstacles, 
         invisible_cells = invisible_cells,
         num_map = num_map,
-        frontier_frequency = frontier_frequency,
         discount = discount,
         n_iterations = n_iterations,
         depth = depth,

@@ -36,7 +36,6 @@ function run(;
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
     nb_communication = 1,
-    frontier_frequency = 10,
     alpha = 0.01,
     file = "",
     id_expe = 0
@@ -85,8 +84,7 @@ function run(;
         begin_zone = (1,1),
         vis_range = vis_range,    
         com_range = com_range,
-        invisible_cells = invisible_cells,
-        frontier_frequency = frontier_frequency
+        invisible_cells = invisible_cells
     )
 
     robots = [model[i] for i in 1:nb_robots]
