@@ -50,11 +50,14 @@ function initialize_model(
         abmproperties(model).invisible_cells[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
     end
 
+    walkmap = BitArray{2}(trues(extent[1],extent[2]))
+    pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
+
     for n ∈ 1:nb_robots
         pos = (rand(T1),rand(T2))
         id = n
 
-        robot = RobotCen{D}(id, pos, vis_range)
+        robot = RobotCen{D}(id, pos, vis_range, pathfinder, Set())
         add_agent!(robot, pos, model) 
     end
 

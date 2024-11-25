@@ -36,7 +36,7 @@ function run(;
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
     nb_communication = 1,
-    frontier_frequency = 20,
+    frontier_frequency = 10,
     alpha = 0.01,
     file = "",
     id_expe = 0

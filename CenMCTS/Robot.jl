@@ -97,7 +97,7 @@ function initialize_model(;
 
         pathfinder_update!(robot.pathfinder, gridmap)
 
-        robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, gridmap, [x.pos for x in robots_states], robot.frontiers; need_repartition=false)
+        # robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, gridmap, [x.pos for x in robots_states], robot.frontiers; need_repartition=false)
     end
 
     possible_actions = compute_actions(nb_robots)
@@ -155,7 +155,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
         obstacles_pos = [element.pos for element in obstacles]
         gridmap_update!(next_gridmap, 0, robot.id, all_robots_pos, vis_range, obstacles_pos, model)
 
-        robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, next_gridmap, all_robots_pos, robot.frontiers; need_repartition=false)
+        # robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, next_gridmap, all_robots_pos, robot.frontiers; need_repartition=false)
 
         all_frontiers = union(all_frontiers, robot.frontiers) 
     end

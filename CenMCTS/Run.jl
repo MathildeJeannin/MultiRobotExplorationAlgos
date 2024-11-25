@@ -29,7 +29,7 @@ function run(;
     num_map = -1, 
     com_range = 10,
     penalite = false,
-    frontier_frequency = 5,
+    frontier_frequency = 10,
     id_expe = 0,
     file = ""
     )

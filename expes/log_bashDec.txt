@@ -1,2 +1,0 @@
-Finished 2 simu, n = 4
-All done

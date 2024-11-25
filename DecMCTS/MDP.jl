@@ -35,9 +35,9 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
 
         next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [p.state.pos for p in next_robots_plans], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
-        if (s.nb_coups-1)%m.frontier_frequency == 0 
-            robot.rollout_parameters.frontiers = frontierDetection(robot.id, next_pos, m.vis_range, next_gridmap, [p.state.pos for p in next_robots_plans], robot.rollout_parameters.frontiers, need_repartition=false)
-        end
+        # if (s.nb_coups-1)%m.frontier_frequency == 0 
+        #     robot.rollout_parameters.frontiers = frontierDetection(robot.id, next_pos, m.vis_range, next_gridmap, [p.state.pos for p in next_robots_plans], robot.rollout_parameters.frontiers, need_repartition=false)
+        # end
 
 
         for plan in next_robots_plans
@@ -55,9 +55,9 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
 
                 next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [p.state.pos for p in next_robots_plans], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
 
-                if (s.nb_coups-1)%m.frontier_frequency == 0
-                    robot.rollout_parameters.frontiers = frontierDetection(plan.state.id, next_robot_pos, m.vis_range, next_gridmap, [p.state.pos for p in next_robots_plans], robot.rollout_parameters.frontiers, need_repartition=false)
-                end
+                # if (s.nb_coups-1)%m.frontier_frequency == 0
+                #     robot.rollout_parameters.frontiers = frontierDetection(plan.state.id, next_robot_pos, m.vis_range, next_gridmap, [p.state.pos for p in next_robots_plans], robot.rollout_parameters.frontiers, need_repartition=false)
+                # end
             end
         end
 
@@ -104,44 +104,44 @@ end
 function POMDPs.action(rollout_policy::FrontierPolicy, s::State)
     robot = model[s.id]
 
-    if isempty(robot.rollout_parameters.frontiers)
-        return rand(rollout_policy.mdp.possible_actions)
-    end
+    # if isempty(robot.rollout_parameters.frontiers)
+    return rand(rollout_policy.mdp.possible_actions)
+    # end
 
-    if s.nb_coups - robot.rollout_parameters.debut_rollout == 0 
-        robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
-        robot.rollout_parameters.actions_sequence = MutableLinkedList{Action}()
-    end
+    # if s.nb_coups - robot.rollout_parameters.debut_rollout == 0 
+    #     robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
+    #     robot.rollout_parameters.actions_sequence = MutableLinkedList{Action}()
+    # end
 
-    if isempty(robot.rollout_parameters.actions_sequence)
-        goal = rand(robot.rollout_parameters.frontiers)
-        pos = s.robots_plans[s.id].state.pos
+    # if isempty(robot.rollout_parameters.actions_sequence)
+    #     goal = rand(robot.rollout_parameters.frontiers)
+    #     pos = s.robots_plans[s.id].state.pos
 
-        plan = collect(Agents.Pathfinding.find_path(robot.pathfinder, pos, goal))
+    #     plan = collect(Agents.Pathfinding.find_path(robot.pathfinder, pos, goal))
 
-        if isempty(plan)
-            return rand(rollout_policy.mdp.possible_actions)
-        end
+    #     if isempty(plan)
+    #         return rand(rollout_policy.mdp.possible_actions)
+    #     end
 
-        robot.rollout_parameters.actions_sequence = MutableLinkedList{Action}()
+    #     robot.rollout_parameters.actions_sequence = MutableLinkedList{Action}()
 
-        for p in collect(plan)
-            action = (p[1]-pos[1], p[2]-pos[2])./distance(p, pos)
-            all_directions = rollout_policy.mdp.possible_actions
-            best_direction = all_directions[1]
-            dist=10000000
-            for d in all_directions
-                tmp_dist = distance(action,d.direction)
-                if tmp_dist < dist
-                    dist = tmp_dist
-                    best_direction = d
-                end
-            end
-            append!(robot.rollout_parameters.actions_sequence, best_direction)
-        end
-    end
+    #     for p in collect(plan)
+    #         action = (p[1]-pos[1], p[2]-pos[2])./distance(p, pos)
+    #         all_directions = rollout_policy.mdp.possible_actions
+    #         best_direction = all_directions[1]
+    #         dist=10000000
+    #         for d in all_directions
+    #             tmp_dist = distance(action,d.direction)
+    #             if tmp_dist < dist
+    #                 dist = tmp_dist
+    #                 best_direction = d
+    #             end
+    #         end
+    #         append!(robot.rollout_parameters.actions_sequence, best_direction)
+    #     end
+    # end
 
-    output = popfirst!(robot.rollout_parameters.actions_sequence)
+    # output = popfirst!(robot.rollout_parameters.actions_sequence)
     
-    return output
+    # return output
 end

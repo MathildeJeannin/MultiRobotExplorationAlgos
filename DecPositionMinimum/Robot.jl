@@ -71,13 +71,22 @@ function initialize_model(
 
         robot = RobotPosMin{D}(id, pos, vis_range, com_range, gridmap_n, [(1,1) for i in 1:nb_robots], pathfinder, [], Set())
         add_agent!(robot, pos, model)
+        
+    end
+
+    robots = [model[i] for i in 1:nb_robots]
+    for robot in robots
+        in_range = nearby_robots(robot, model, robot.com_range)
+        for r in in_range
+            exchange_positions!(robot, r)
+        end
 
         for pos in robot.all_robots_pos
             if pos != robot.pos
                 robot.pathfinder.walkmap[pos[1],pos[2]] = false
             end
         end
-        
+
         robot.frontiers, all_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.gridmap, robot.all_robots_pos, robot.frontiers; need_repartition=true)
         goal = positionMinimum(all_frontiers, robot.gridmap, robot.all_robots_pos[Not(robot.id)], robot.pos)
         robot.plan = collect(plan_route!(robot, goal, robot.pathfinder))
@@ -86,14 +95,6 @@ function initialize_model(
             if pos != robot.pos
                 robot.pathfinder.walkmap[pos[1],pos[2]] = true
             end
-        end
-    end
-
-    robots = [model[i] for i in 1:nb_robots]
-    for robot in robots
-        in_range = nearby_robots(robot, model, robot.com_range)
-        for r in in_range
-            exchange_positions!(robot, r)
         end
     end
 

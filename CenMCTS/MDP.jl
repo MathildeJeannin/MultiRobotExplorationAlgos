@@ -22,7 +22,6 @@ function POMDPs.transition(m::RobotMDP, s::StateCen, a::ActionCen)
 
         distribution = SparseCat([-1,0],[0,1.0])
 
-        # for i in eachindex(s.robots_states)
         all_robots_pos = [r.pos for r in next_robots_states]
         for rs in s.robots_states
 
@@ -34,13 +33,11 @@ function POMDPs.transition(m::RobotMDP, s::StateCen, a::ActionCen)
 
             gridmap_update!(next_gridmap, 0, rs.id, all_robots_pos, m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
 
-            if (s.nb_coups-1)%m.frontier_frequency == 0
-                abmproperties(model).rollout_parameters.frontiers = frontierDetection(rs.id, rs.pos, m.vis_range, next_gridmap, [x.pos for x in s.robots_states], abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
-            end
+            # if (s.nb_coups-1)%m.frontier_frequency == 0
+            #     abmproperties(model).rollout_parameters.frontiers = frontierDetection(rs.id, rs.pos, m.vis_range, next_gridmap, [x.pos for x in s.robots_states], abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
+            # end
 
         end      
-
-        # println(next_seen_gridmap)
 
         sp = StateCen(next_gridmap, next_robots_states, s.nb_coups+1)
         return sp
@@ -82,7 +79,6 @@ function compute_actions(nb_robots)
 
     global vector_all_actions = Vector{ActionCen}(undef, length(all_actions))
     for i in eachindex(all_actions)
-        # vector_all_actions[i] = [j for j in all_actions[i]]
         vector_all_actions[i] = ActionCen([j for j in all_actions[i]])
     end
     

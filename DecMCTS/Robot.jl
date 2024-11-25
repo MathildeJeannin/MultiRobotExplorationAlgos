@@ -109,7 +109,7 @@ function initialize_model(
             exchange_positions!(robot, r)
         end
 
-        robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
+        # robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
     end
 
     return model
@@ -186,7 +186,7 @@ function agent_step!(robot, model, vis_tree)
 
         robot.state.known_cells, robot.state.seen_cells = gridmap_update!(robot.state.gridmap, robot.state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.seen_cells)
 
-        robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
+        # robot.rollout_parameters.frontiers = robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.rollout_parameters.frontiers, need_repartition=false)
 
         pathfinder_update!(robot.pathfinder, robot.state.gridmap)
 
