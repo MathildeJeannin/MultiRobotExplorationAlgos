@@ -27,7 +27,7 @@ function initialize_model(
 
 
     properties = (
-        seen_all_gridmap = BitArray{3}(falses((extent[1],extent[2],nb_robots))),
+        seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent))) for i in 1:nb_robots),
         nb_obstacles, 
         invisible_cells,
         nb_robots
@@ -43,7 +43,7 @@ function initialize_model(
 
     #obstacles
     if num_map == 0
-        add_obstacles(model, nb_robots; N = nb_obstacles, extent = extent)
+        add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
     else 

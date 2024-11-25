@@ -12,7 +12,7 @@ include("PositionMinimum.jl")
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(;
-    nb_obstacles = 0, 
+    nb_obstacles = [0], 
     nb_robots = 3,
     extent = (15,15),
     vis_figure = false,
@@ -32,7 +32,7 @@ function run(;
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
         invisible_cells = [parse(Int64, line_triche)]
-        nb_obstacles = countlines("../src/maps/map$(num_map).txt") - 2
+        nb_obstacles = [countlines("../src/maps/map$(num_map).txt") - 2]
     end
 
     global model = initialize_model(
@@ -114,7 +114,7 @@ end
 
 
 function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_expe::Int, nb_step::Int;
-    nb_obstacles = 0, 
+    nb_obstacles = [0], 
     nb_robots = 3,
     extent = (15,15),
     depth = 50,
@@ -130,12 +130,12 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, id_ex
     astar_distances = zeros((length(robots), length(robots)))
     euclidean_distances = zeros((length(robots), length(robots)))
     
-    percent_of_map[end] = count(x->any(x), [abmproperties(model).seen_all_gridmap[i,j,:] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles)
+    percent_of_map[end] = count(x-> any(x.>0), [abmproperties(model).seen_all_gridmap[i,j,:] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
     df = DataFrame("nb_steps" => nb_step, "percent_of_map_all" => percent_of_map[end])
 
     for robot in robots
 
-        percent_of_map[robot.id] = count(x->x, [abmproperties(model).seen_all_gridmap[i,j,robot.id] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles)
+        percent_of_map[robot.id] = count(x->x, [abmproperties(model).seen_all_gridmap[i,j,robot.id] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
 
         for robot_prime in filter(x->x.id!=robot.id,robots[robot.id+1:end])
             astar_distances[robot.id, robot_prime.id] = length(plan_route!(robot, robot_prime.pos, pathfinder))

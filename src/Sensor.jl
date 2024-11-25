@@ -22,6 +22,8 @@ function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_p
     lscan = limit_scan(scan, pos)
     rays = [raytracing(pos, l, vis_range) for l in lscan]
 
+    seen = Set()
+
     if gridmap[pos[1], pos[2]] == -2
         gridmap[pos[1], pos[2]] = 0
         if seen_cells != -1
@@ -29,7 +31,7 @@ function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_p
         end
         known_cells += 1
         if !transition
-            abmproperties(model).seen_all_gridmap[pos[1],pos[2],id] = true
+            push!(seen, pos)
         end
     end
 
@@ -64,16 +66,19 @@ function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_p
                     gridmap[x,y] = 0
                 end
             end
-            
             if !transition
-                abmproperties(model).seen_all_gridmap[x,y,id] = true
+                push!(seen, (x,y))
             end
         end
     end
-    # println(count(x->x!=-2, gridmap) == known_cells)
+
+    if !transition
+        for cell in seen
+            abmproperties(model).seen_all_gridmap[id][cell[1],cell[2]] += 1
+        end
+    end
     return known_cells, seen_cells
 end
-
 
 function compute_new_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action::Tuple; goal = nothing)
     pos = robots_pos[id]
@@ -334,27 +339,24 @@ function check_for_invisible_obstacles!(gridmap)
 end
 
 
-function _print_coverage_map(coverage_map::BitArray)
-    x,y,nb_robots = size(coverage_map)
-    map = MMatrix{x,y}(zeros(x,y))
+function _print_coverage_map(coverage_map::MVector)
+    nb_robots = length(coverage_map)
 
-    for i in 1:x
-        for j in 1:y
-            for r in 1:nb_robots
-                if coverage_map[i,j,r]
-                    map[i,j] += 1
-                end
-                obs = collect(agents_in_position((i,j), model))
-                if !isempty(obs) && typeof(obs[1]) == Obstacle{2}
-                    map[i,j] = -1
-                end
+    a = round(Int64, sqrt(nb_robots))
+    b = ceil(Int64, nb_robots/a)
+    x = 1
+
+    f = Figure()
+
+    for i in 1:a
+        for j in 1:b
+            if x <= nb_robots
+                ax = Axis(f[i,j])
+                heatmap!(ax, Matrix(cov[x]), colorrange = (0,10))
+                x+=1
             end
         end
     end
 
-    # f = Figure()
-    # ax = Axis(f[1,1])
-    fig, ax, hm = heatmap(map)
-    Colorbar(fig[:,end+1], hm)
-    display(fig)
+    display(f)
 end
