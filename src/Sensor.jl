@@ -341,7 +341,8 @@ end
 
 function _print_coverage_map(coverage_map::MVector)
     nb_robots = length(coverage_map)
-
+    # max_value = maximum([maximum(cov[i]) for i in 1:nb_robots])
+    max_value = 10
     a = round(Int64, sqrt(nb_robots))
     b = ceil(Int64, nb_robots/a)
     x = 1
@@ -352,11 +353,11 @@ function _print_coverage_map(coverage_map::MVector)
         for j in 1:b
             if x <= nb_robots
                 ax = Axis(f[i,j])
-                heatmap!(ax, Matrix(cov[x]), colorrange = (0,10))
+                heatmap!(ax, Matrix(cov[x]), colorrange = (0,max_value))
                 x+=1
             end
         end
     end
-
+    Colorbar(f[end,end+1], colorrange = (0,max_value))
     display(f)
 end
