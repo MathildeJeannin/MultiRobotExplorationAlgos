@@ -1,3 +1,3 @@
-alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map,com_range
-1,1,1,1,1,500,0,0.85,3,50,100,2,5
-1,1,1,1,1,500,0,0.85,3,50,100,3,5
+alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map,com_range,alpha
+1,1,1,1,1,500,0,0.85,3,50,100,2,5,0.01
+1,1,1,1,1,500,0,0.85,3,50,100,3,5,0.01

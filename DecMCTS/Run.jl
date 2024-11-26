@@ -179,7 +179,8 @@ function run(;
             fct_proba = fct_proba,
             fct_sequence = fct_sequence,
             nb_sequence = nb_sequence,
-            nb_communication = nb_communication
+            nb_communication = nb_communication,
+            alpha = alpha
             )
         end
 
@@ -236,7 +237,8 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
-    nb_communication = 1
+    nb_communication = 1,
+    alpha = 0.01
     )
     robots = [model[i] for i in eachindex(model[1].plans)]
     extent = size(robots[1].state.gridmap)
