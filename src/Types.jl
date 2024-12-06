@@ -50,8 +50,7 @@ mutable struct RolloutInfo
     in_rollout::Bool
     debut_rollout::Int64
     frontiers::Set
-    # actions_sequence::Union{MutableLinkedList{Action}, Vector{ActionCen}}
-    goal::Tuple
+    goal::Union{Tuple,Vector{Tuple{Int,Int}}}
     robots_plans::MVector
 end
 
