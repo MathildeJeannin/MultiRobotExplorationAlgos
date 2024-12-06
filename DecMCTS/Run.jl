@@ -10,7 +10,7 @@ include("../src/FrontierDetection.jl")
 include("Optimization.jl")
 include("../src/Communication.jl")
 
-wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
+global wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(; 
     alpha_state = 1.0, 
