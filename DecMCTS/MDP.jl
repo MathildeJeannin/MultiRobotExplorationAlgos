@@ -10,12 +10,14 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
     # TODO : changement lié à vecteur d'actions -> 1 action + changement de types
     ImplicitDistribution() do x
         robot = model[s.id]
+        nb_robots = length(s.robots_states)
+        extent = size(s.gridmap)
 
         # P_obstacle = (m.nb_obstacle - nb_obst_vus)/(extent[1]*extent[2] - nb_cell_vues)
         P_obstacle = 0
         distribution = SparseCat([-1,0], [P_obstacle,1-P_obstacle])
 
-        next_robots_plans = deepcopy(s.robots_plans)
+        next_robots_states = deepcopy(s.robots_states)
         next_gridmap = deepcopy(s.gridmap)
         # next_seen_gridmap = deepcopy(s.seen_gridmap)
 
@@ -23,37 +25,37 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
             sequences, states = select_best_sequences(robot)
             for i in eachindex(sequences)
                 if i!=robot.id
-                    next_robots_plans[i].best_sequences = sequences[i]
-                    next_robots_plans[i].state = states[i]
+                    robot.rollout_parameters.robots_plans[i].best_sequences = sequences[i]
+                    robot.rollout_parameters.robots_plans[i].state = states[i]
                 end
             end
         end
 
-        next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [p.state.pos for p in next_robots_plans], m.vis_range, a.direction)
+        next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, a.direction)
 
-        next_robots_plans[robot.id].state = RobotState(robot.id, next_pos)
+        next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
-        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [p.state.pos for p in next_robots_plans], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
 
-        for plan in next_robots_plans
+        for plan in robot.rollout_parameters.robots_plans
             if plan.state.id != robot.id
                 
                 if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (length(plan.best_sequences[1]) >= s.nb_coups - robot.rollout_parameters.debut_rollout + 1)
-                    action = plan.best_sequences[1][s.nb_coups - robot.rollout_parameters.debut_rollout + 1]
+                    action = popfirst!(plan.best_sequences[1])
                 else
                     action = rand(m.possible_actions)
                 end
                 
-                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [p.state.pos for p in next_robots_plans], m.vis_range, action.direction)
+                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, action.direction)
 
-                next_robots_plans[plan.state.id].state = RobotState(plan.state.id, next_robot_pos)
+                next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
 
-                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [p.state.pos for p in next_robots_plans], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
+                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
             end
         end
 
-        sp = State(robot.id, next_gridmap, next_known_cells, next_seen_cells, next_robots_plans, s.nb_coups+1)
+        sp = State(robot.id, next_robots_states, next_gridmap, next_known_cells, next_seen_cells, s.nb_coups+1)
 
         return sp
     end
@@ -62,7 +64,10 @@ end
 
 function POMDPs.reward(m::RobotMDP, s::State, a::Action, sp::State)
     robot = model[s.id]
+    nb_robots = length(s.robots_states)
+
     r = sp.seen_cells - s.seen_cells
+    # max_r = abmproperties(model).max_cell_in_scan[1]
 
     # a = -4/(robot.com_range - robot.vis_range)^2
     # b = -a*(robot.com_range + robot.vis_range)
@@ -70,14 +75,16 @@ function POMDPs.reward(m::RobotMDP, s::State, a::Action, sp::State)
     # f(x) = a*x^2+b*x+c
 
     mu = (robot.vis_range+robot.com_range)/2
-    sigma = robot.com_range-robot.vis_range
+    sigma = (robot.com_range-robot.vis_range)/4
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
+    max_Q = (nb_robots-1)*f(mu) + f(0)
     Q = 0 
-    for i in eachindex(length(sp.robots_plans))
-        d = distance(sp.robots_plans[robot.id].state.pos, sp.robots_plans[i].state.pos)
+    for i in eachindex(length(sp.robots_states))
+        d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
         Q += f(d)
     end
-    return r*Q
+    # return r/max_r + Q/max_Q -> fonctionne pas car si aucune cellule vues mais que robots proches les uns des autres = bonne reward
+    return r+Q
 end
 
 
@@ -97,44 +104,68 @@ function POMDPs.action(rollout_policy::FrontierPolicy, s::State)
     robot = model[s.id]
 
     if isempty(robot.rollout_parameters.frontiers)
-        return rand(rollout_policy.mdp.possible_actions)
+        # return rand(rollout_policy.mdp.possible_actions)
+        out = rand(rollout_policy.mdp.possible_actions)
+        return out
     end
 
     if s.nb_coups - robot.rollout_parameters.debut_rollout == 0 
         robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
-        robot.rollout_parameters.actions_sequence = MutableLinkedList{Action}()
+        robot.rollout_parameters.goal = (0,0)
+        println("ici")
     end
 
-    if isempty(robot.rollout_parameters.actions_sequence)
+    if robot.rollout_parameters.goal == (0,0) || s.gridmap[robot.rollout_parameters.goal[1], robot.rollout_parameters.goal[2]] != -2
         robot.rollout_parameters.frontiers = frontierDetectionMCTS(s.gridmap, robot.rollout_parameters.frontiers, need_repartition=false)
-        goal = rand(robot.rollout_parameters.frontiers)
-        pos = s.robots_plans[s.id].state.pos
+        robot.rollout_parameters.goal = rand(robot.rollout_parameters.frontiers)
+    end
 
-        plan = collect(Agents.Pathfinding.find_path(robot.pathfinder, pos, goal))
+    pos = s.robots_states[s.id].pos
+    plan = collect(Agents.Pathfinding.find_path(robot.pathfinder, pos, robot.rollout_parameters.goal))
 
-        if isempty(plan)
-            return rand(rollout_policy.mdp.possible_actions)
-        end
+    if isempty(plan)
+        robot.rollout_parameters.goal = (0,0)
+        out = rand(rollout_policy.mdp.possible_actions)
+        return out
+    end
 
-        robot.rollout_parameters.actions_sequence = MutableLinkedList{Action}()
-
-        for p in collect(plan)
-            action = (p[1]-pos[1], p[2]-pos[2])./distance(p, pos)
-            all_directions = rollout_policy.mdp.possible_actions
-            best_direction = all_directions[1]
-            dist=10000000
-            for d in all_directions
-                tmp_dist = distance(action,d.direction)
-                if tmp_dist < dist
-                    dist = tmp_dist
-                    best_direction = d
-                end
-            end
-            append!(robot.rollout_parameters.actions_sequence, best_direction)
+    a = (plan[1][1]-pos[1], plan[1][2]-pos[2])./distance(plan[1], pos)
+    all_directions = rollout_policy.mdp.possible_actions
+    best_direction = all_directions[1]
+    dist=10000000
+    for d in all_directions
+        tmp_dist = distance(a,d.direction)
+        if tmp_dist < dist
+            dist = tmp_dist
+            best_direction = d
         end
     end
 
-    output = popfirst!(robot.rollout_parameters.actions_sequence)
+    # println("Action : robot $(s.id), action = $(best_direction.direction)")
     
-    return output
+    return best_direction
+end
+
+
+
+function special_Q(m::RobotMDP, s::State, a::Action)
+    # rng = MersenneTwister(rand(1:1000000))
+    # sp, r = @gen(:sp, :r)(m, s, a, rng)
+    next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], m.vis_range, a.direction)
+    if next_pos == s.robots_states[s.id].pos
+        return -100.0
+    else
+        return 0.0
+    end
+end
+
+
+
+function special_N(m::RobotMDP, s::State, a::Action)
+    next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], m.vis_range, a.direction)
+    if next_pos == s.robots_states[s.id].pos
+        return 10000000
+    else
+        return 0
+    end
 end
