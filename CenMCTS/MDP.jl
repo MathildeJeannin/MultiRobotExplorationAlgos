@@ -54,33 +54,6 @@ function POMDPs.isterminal(m::RobotMDP, s::StateCen)
 end
 
 
-function compute_actions(nb_robots)
-    theta = [i*pi/4 for i in 0:7]
-    rad_actions = [(round(cos(θ),digits=2),round(sin(θ), digits=2)) for θ in theta]
-
-    ids = collect(Int8(i) for i in 1:nb_robots)
-    
-    actionsNR = [Vector{Action}(undef,length(rad_actions)) for i in 1:nb_robots]
-
-    for id in ids
-        for index_a in eachindex(rad_actions)
-            actionsNR[id][index_a] = Action(rad_actions[index_a])
-        end
-    end
-
-    A = [actionsNR[i] for i in 1:nb_robots]
-    all_actions = collect(Iterators.product(A...))
-
-
-    global vector_all_actions = Vector{ActionCen}(undef, length(all_actions))
-    for i in eachindex(all_actions)
-        vector_all_actions[i] = ActionCen([j for j in all_actions[i]])
-    end
-    
-    return vector_all_actions
-end
-
-
 struct FrontierPolicy{M<:RobotMDP} <: Policy 
     mdp::M
 end
@@ -90,54 +63,69 @@ function POMDPs.action(rollout_policy::FrontierPolicy, s::StateCen)
     nb_robots = length(s.robots_states)
     robots = [model[i] for i in 1:nb_robots]
 
+    frontiers = abmproperties(model).rollout_parameters.frontiers
+    goal = abmproperties(model).rollout_parameters.goal
+
     if isempty(frontiers)
-        return rand(rollout_policy.mdp.possible_actions)
+        out = rand(rollout_policy.mdp.possible_actions)
+        return out
     end
 
-    if s.nb_coups - abmproperties(model).rollout_parameters.debut_rollout == 0 
-        abmproperties(model).rollout_parameters.frontiers = robots[1].frontiers
-        empty!(abmproperties(model).rollout_parameters.actions_sequence)
-    end
+    if (count(x->x==(0,0), goal) == 0 && all([s.gridmap[goal[i][1],goal[i][2]]!=-2 for i in 1:nb_robots])) || isempty(abmproperties(model).rollout_parameters.frontiers)
+        abmproperties(model).rollout_parameters.frontiers = frontierDetectionMCTS(s.gridmap, abmproperties(model).rollout_parameters.frontiers, need_repartition=false)
+    end        
 
-    if isempty(abmproperties(model).rollout_parameters.actions_sequence)
-        frontiers = abmproperties(model).rollout_parameters.frontiers = frontierDetectionMCTS(abmproperties(model).rollout_parameters.frontiers, s.gridmap, need_repartition=false)
-        abmproperties(model).rollout_parameters.actions_sequence = Vector{ActionCen}(undef, 0)
-
-        for robot in robots
-            goal = rand(frontiers)
-            pos = s.robots_states[robot.id].pos
-
-            plan = collect(Agents.Pathfinding.find_path(robot.pathfinder, pos, goal))
-
-            if isempty(plan)
-                return rand(rollout_policy.mdp.possible_actions)
-            end
-
-            i = 1
-            for p in collect(plan)
-                action = (p[1]-pos[1], p[2]-pos[2])./distance(p, pos)
-                all_directions = rollout_policy.mdp.possible_actions
-                best_direction = all_directions[1].directions[robot.id]
-                dist=10000000
-                for one_action in all_directions
-                    d = one_action.directions[robot.id]
-                    tmp_dist = distance(action,d.direction)
-                    if tmp_dist < dist
-                        dist = tmp_dist
-                        best_direction = d
-                    end
-                end
-
-                if robot.id == 1
-                    push!(abmproperties(model).rollout_parameters.actions_sequence, deepcopy(rollout_policy.mdp.possible_actions[1]))
-                end
-                abmproperties(model).rollout_parameters.actions_sequence[i].directions[robot.id] = best_direction
-                i += 1
-            end
+    out = rand(rollout_policy.mdp.possible_actions)
+    for robot in robots
+        if abmproperties(model).rollout_parameters.goal[robot.id] == (0,0) || s.gridmap[goal[robot.id][1],goal[robot.id][2]]!=-2
+            abmproperties(model).rollout_parameters.goal[robot.id] = rand(abmproperties(model).rollout_parameters.frontiers)
         end
-    end
 
-    output = popfirst!(abmproperties(model).rollout_parameters.actions_sequence)
-    
-    return output
+        pos = s.robots_states[robot.id].pos
+        plan = collect(Agents.Pathfinding.find_path(robot.pathfinder, pos, abmproperties(model).rollout_parameters.goal[robot.id]))
+
+        if isempty(plan)
+            abmproperties(model).rollout_parameters.goal[robot.id] = (0,0)
+        else
+            a = (plan[1][1]-pos[1], plan[1][2]-pos[2])./distance(plan[1], pos)
+            best_direction = all_directions[1]
+            dist=10000000
+            for d in all_directions
+                tmp_dist = distance(a,d.direction)
+                if tmp_dist < dist
+                    dist = tmp_dist
+                    best_direction = d
+                end
+            end
+            out.directions[robot.id] = best_direction
+        end  
+    end
+    return out
+end
+
+
+function special_Q(m::RobotMDP, s::StateCen, a::ActionCen)
+    next_pos = [rs.pos for rs in s.robots_states]
+    for rs in s.robots_states
+        next_pos[rs.id], _ = compute_new_pos(s.gridmap, rs.id, next_pos, m.vis_range, a.directions[rs.id].direction)
+    end
+    if any(next_pos .== [rs.pos for rs in s.robots_states])
+        return -100.0
+    else
+        return 0.0
+    end
+end
+
+
+
+function special_N(m::RobotMDP, s::StateCen, a::ActionCen)
+    next_pos = [rs.pos for rs in s.robots_states]
+    for rs in s.robots_states
+        next_pos[rs.id], _ = compute_new_pos(s.gridmap, rs.id, next_pos, m.vis_range, a.directions[rs.id].direction)
+    end
+    if any(next_pos .== [rs.pos for rs in s.robots_states])
+        return 1000000
+    else
+        return 0
+    end
 end

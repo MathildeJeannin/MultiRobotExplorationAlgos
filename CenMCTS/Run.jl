@@ -7,6 +7,8 @@ include("../src/Maps.jl")
 include("Robot.jl")
 include("../src/Sensor.jl")
 include("../src/FrontierDetection.jl")
+include("../src/Utils.jl")
+
 
 function run(; 
     alpha_state = 1.0, 
@@ -49,7 +51,8 @@ function run(;
         nb_obstacles = [countlines("../src/maps/map$(num_map).txt") - 2]
     end
 
-    
+    global all_directions = compute_actions_decMCTS()
+
     
     global model, state = initialize_model(;
         N = nb_robots,                 # number of agents
@@ -97,6 +100,7 @@ function run(;
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
+    
     nb_steps = 0
     while (count(i->i!=-2, gridmap) != (extent[1]*extent[2]-invisible_cells[1])) && (nb_steps < max_steps)
     # while (count(i->i!=-2, gridmap) != (extent[1]*extent[2])) && nb_steps < max_steps
