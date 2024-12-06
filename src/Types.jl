@@ -6,10 +6,10 @@ end
 
 @struct_hash_equal mutable struct State 
     id::Int
+    robots_states::MVector
     gridmap::MMatrix
     known_cells::Int64
     seen_cells::Int64
-    robots_plans::MVector # vector of Robot_plan
     nb_coups::Int
 end
 
@@ -50,7 +50,9 @@ mutable struct RolloutInfo
     in_rollout::Bool
     debut_rollout::Int64
     frontiers::Set
-    actions_sequence::Union{MutableLinkedList{Action}, Vector{ActionCen}}
+    # actions_sequence::Union{MutableLinkedList{Action}, Vector{ActionCen}}
+    goal::Tuple
+    robots_plans::MVector
 end
 
 
