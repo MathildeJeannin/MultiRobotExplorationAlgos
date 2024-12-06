@@ -22,6 +22,7 @@ end
 @struct_hash_equal mutable struct StateCen
     gridmap::MMatrix
     robots_states::Vector{RobotState}
+    seen::Vector
     nb_coups::Int
 end
 

@@ -110,7 +110,7 @@ function initialize_model(;
 
     global planner = solve(solver, mdp)
 
-    state = StateCen(gridmap, robots_states, 0)
+    state = StateCen(gridmap, robots_states, [0,0,0], 0)
 
     return model, state
 end
@@ -165,5 +165,5 @@ function agent_step!(model, gridmap, planner, state, visualisation)
         pathfinder_update!(robot.pathfinder, next_gridmap)
     end
 
-    return StateCen(next_gridmap, next_robots_states, nb_coups)
+    return StateCen(next_gridmap, next_robots_states, [0,0,0], nb_coups)
 end
