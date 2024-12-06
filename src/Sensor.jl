@@ -202,6 +202,13 @@ function distance(cell1,cell2)
 end
 
 
+function maxCellInScan(vis_range::Int, model::StandardABM)
+    extent = abmproperties(model).extent
+    pos = (round(extent[1]/2), round(extent[2]/2))
+    return length(Set(nearby_positions(pos, model, vis_range)))
+end
+
+
 function _print_gridmap(gridmap, states)
     println()
     pos = [s.pos for s in states]
