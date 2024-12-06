@@ -104,15 +104,7 @@ function POMDPs.action(rollout_policy::FrontierPolicy, s::State)
     robot = model[s.id]
 
     if isempty(robot.rollout_parameters.frontiers)
-        # return rand(rollout_policy.mdp.possible_actions)
-        out = rand(rollout_policy.mdp.possible_actions)
-        return out
-    end
-
-    if s.nb_coups - robot.rollout_parameters.debut_rollout == 0 
-        robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
-        robot.rollout_parameters.goal = (0,0)
-        println("ici")
+        return rand(rollout_policy.mdp.possible_actions)
     end
 
     if robot.rollout_parameters.goal == (0,0) || s.gridmap[robot.rollout_parameters.goal[1], robot.rollout_parameters.goal[2]] != -2
@@ -140,8 +132,6 @@ function POMDPs.action(rollout_policy::FrontierPolicy, s::State)
             best_direction = d
         end
     end
-
-    # println("Action : robot $(s.id), action = $(best_direction.direction)")
     
     return best_direction
 end
@@ -149,8 +139,6 @@ end
 
 
 function special_Q(m::RobotMDP, s::State, a::Action)
-    # rng = MersenneTwister(rand(1:1000000))
-    # sp, r = @gen(:sp, :r)(m, s, a, rng)
     next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], m.vis_range, a.direction)
     if next_pos == s.robots_states[s.id].pos
         return -100.0

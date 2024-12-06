@@ -9,6 +9,7 @@ include("../src/Sensor.jl")
 include("../src/FrontierDetection.jl")
 include("Optimization.jl")
 include("../src/Communication.jl")
+include("../src/Utils.jl")
 
 global wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 

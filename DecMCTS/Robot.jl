@@ -62,13 +62,7 @@ function initialize_model(
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
     end
 
-    theta = [i*pi/4 for i in 0:7]
-    # theta = [i*pi/2 for i in 0:3]
-    rad_actions = [(round(cos(θ),digits=2),round(sin(θ), digits=2)) for θ in theta]
-    possible_actions = Vector{Action}(undef,length(rad_actions))
-    for (i,a) in enumerate(rad_actions)
-        possible_actions[i] = Action(a)
-    end
+    possible_actions = compute_actions_decMCTS()
 
     robots_plans = MVector{nb_robots, RobotPlan}([RobotPlan(RobotState(i,(1,1)), Vector{Vector{Tuple{Int,Action}}}(undef, 0), Vector{Float64}(undef, 0)) for i in 1:nb_robots])
 
