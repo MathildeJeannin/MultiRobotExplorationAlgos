@@ -58,7 +58,8 @@ end
 
 function exchange_positions!(r1::RobotDec, r2::RobotDec)
     r1.plans[r2.id].state = RobotState(r2.id, r2.pos)
-    r1.state.robots_plans[r2.id].state = RobotState(r2.id, r2.pos)
+    r1.rollout_parameters.robots_plans[r2.id].state = deepcopy(r1.plans[r2.id].state)
+    r1.state.robots_states[r2.id] = deepcopy(r1.plans[r2.id].state)
 end
 
 function exchange_positions!(r1::RobotPosMin, r2::RobotPosMin)
