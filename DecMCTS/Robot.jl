@@ -41,6 +41,8 @@ function initialize_model(
         seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent))) for i in 1:nb_robots),
         nb_obstacles, 
         invisible_cells,
+        extent,
+        max_cell_in_scan = [0],
         nb_robots
     )
 
@@ -49,6 +51,7 @@ function initialize_model(
         properties = properties
     )
 
+    abmproperties(model).max_cell_in_scan[1] = maxCellInScan(vis_range, model)
 
     #obstacles
     if num_map == 0
@@ -83,21 +86,23 @@ function initialize_model(
 
         known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, [p.state.pos for p in robots_plans], vis_range, obstacles_poses, model; seen_cells = 0)
 
-        state = State(id, gridmap_n, known_cells, seen_cells, deepcopy(robots_plans), 0)
+        # state = State(id, gridmap_n, known_cells, seen_cells, deepcopy(robots_plans), 0)
+        robots_states = MVector{nb_robots, RobotState}([robots_plans[i].state for i in 1:nb_robots])
+        state = State(id, robots_states, gridmap_n, known_cells, seen_cells, 0)
 
         mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions)
 
         # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
         my_policy = FrontierPolicy(mdp)
 
-        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(my_policy))
+        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(my_policy), init_N=special_N, init_Q=special_Q)
 
         planner = solve(solver, mdp)
 
         walkmap = BitArray{2}(trues(extent[1],extent[2]))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        agent = RobotDec{D}(id, pos, vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), MutableLinkedList{Action}()), state, planner, pathfinder, Set())
+        agent = RobotDec{D}(id, pos, vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), (0,0), deepcopy(robots_plans)), state, planner, pathfinder, Set())
         add_agent!(agent, pos, model)
     end
 
@@ -175,13 +180,13 @@ function agent_step!(robot, model, vis_tree)
         new_pos,_ = compute_new_pos(robot.state.gridmap, robot.id, robots_pos, robot.vis_range, a.direction)
         move_agent!(robot, new_pos, model)
 
-        robot.state.robots_plans[robot.id].state = RobotState(robot.id, robot.pos)
+        robot.state.robots_states[robot.id] = RobotState(robot.id, robot.pos)
         robot.plans[robot.id].state = RobotState(robot.id, robot.pos)
         robots_pos[robot.id] = robot.pos
 
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
 
-        robot.state = State(robot.id, robot.state.gridmap, robot.state.known_cells, robot.state.seen_cells, robot.state.robots_plans, robot.state.nb_coups+1)
+        robot.state = State(robot.id, robot.state.robots_states, robot.state.gridmap, robot.state.known_cells, robot.state.seen_cells, robot.state.nb_coups+1)
 
         robot.state.known_cells, robot.state.seen_cells = gridmap_update!(robot.state.gridmap, robot.state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.seen_cells)
 
