@@ -179,7 +179,7 @@ end
 
 function select_best_sequences(r::Robot)
     rng = MersenneTwister(rand(1:1000000))
-    nb_robots = length(r.state.robots_plans) 
+    nb_robots = length(r.state.robots_states) 
     sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, nb_robots)
     states = Vector{RobotState}(undef, nb_robots)
     for plan in r.plans
@@ -202,23 +202,29 @@ end
 function esperance_fr(r::Robot)
     depth = r.planner.solver.depth
     esp = 0
+    nb_robots = length(r.state.robots_states)
+    
     s = deepcopy(r.state)
     sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, length(r.plans))
     proba = Vector{Vector{Float64}}(undef, length(r.plans))
+    robots_plans = deepcopy(r.rollout_parameters.robots_plans)
+
     for i in eachindex(sequences)
         sequences[i] = r.plans[i].best_sequences
         proba[i] = r.plans[i].assigned_proba
     end
+
 
     all_seq = Iterators.product(sequences...)
     all_proba = collect(Iterators.product(proba...))
     for (i,seq) in enumerate(all_seq)
         prod_qr = 1
         for (i_r,seq_r) in enumerate(seq)
-            s.robots_plans[i_r].best_sequences = [seq_r]
+            # s.robots_plans[i_r].best_sequences = [seq_r]
+            robots_plans[i_r].best_sequences = [seq_r]
             prod_qr = prod_qr * all_proba[i][i_r]
         end
-        esp += simulate_reward(s, r.planner, r.planner.mdp.discount, 1)*prod_qr
+        esp += simulate_reward(s, robots_plans, r.planner, r.planner.mdp.discount, 1)*prod_qr
     end
     return esp
 end
@@ -229,6 +235,8 @@ function esperance_fr_xr(r::Robot, xr::MutableLinkedList{Action}, qr::Float64)
     s = deepcopy(r.state)
     sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, length(r.plans))
     proba = Vector{Vector{Float64}}(undef, length(r.plans))
+    robots_plans = deepcopy(r.rollout_parameters.robots_plans)
+
     for i in eachindex(sequences)
         if i==r.id
             sequences[i] = [xr]
@@ -244,10 +252,10 @@ function esperance_fr_xr(r::Robot, xr::MutableLinkedList{Action}, qr::Float64)
     for (i,seq) in enumerate(all_seq)
         prod_qr = 1
         for (i_r,seq_r) in enumerate(seq)
-            s.robots_plans[i_r].best_sequences = [seq_r]
+            robots_plans[i_r].best_sequences = [seq_r]
             prod_qr = prod_qr * all_proba[i][i_r]
         end
-        esp += simulate_reward(s, r.planner, r.planner.mdp.discount, 1)*prod_qr
+        esp += simulate_reward(s, robots_plans, r.planner, r.planner.mdp.discount, 1)*prod_qr
     end
     return esp
 end
@@ -262,12 +270,12 @@ function shannon_entropy(q_nr::Vector{Float64})
 end
 
 
-function simulate_reward(s::State, planner::DPWPlanner, discount::Float64, compteur::Int64)
+function simulate_reward(s::State, robots_plans::MVector, planner::DPWPlanner, discount::Float64, compteur::Int64)
     id = s.id
-    if length(s.robots_plans[id].best_sequences[1]) >= compteur
-        action = getindex(s.robots_plans[id].best_sequences[1], compteur)
+    if length(robots_plans[id].best_sequences[1]) >= compteur
+        action = getindex(robots_plans[id].best_sequences[1], compteur)
         sp, r = @gen(:sp, :r)(planner.mdp, s, action, planner.rng)
-        return r + discount*simulate_reward(sp, planner, discount, compteur + 1)
+        return r + discount*simulate_reward(sp, robots_plans, planner, discount, compteur + 1)
     else
         return 0
     end
