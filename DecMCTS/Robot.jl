@@ -22,7 +22,8 @@ function initialize_model(
     begin_zone = (1,1), 
     vis_range = 3.0,
     com_range = 2.0,
-    invisible_cells = [0]
+    invisible_cells = [0],
+    nb_blocs = 0
     )
     gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
     # seen_gridmap = MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent)))
@@ -59,7 +60,7 @@ function initialize_model(
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
     else 
-        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
+        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     end
 
     possible_actions = compute_actions_decMCTS()

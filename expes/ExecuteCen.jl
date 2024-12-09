@@ -16,12 +16,15 @@ nb_robots = parse(Int64, ARGS[9])
 depth = parse(Int64, ARGS[10])
 max_steps = parse(Int64, ARGS[11])
 num_map = parse(Int64, ARGS[12])
+extent1 = parse(Int64, ARGS[13])
+extent2 = parse(Int64, ARGS[14])
+nb_blocs = parse(Int64, ARGS[15])
 
-N = parse(Int64, ARGS[13])
+N = parse(Int64, ARGS[16])
 
 t0 = now()
 
-folder = "/alpha_state=$alpha_state,k_state=$k_state,alpha_action=$alpha_action,k_action=$k_action,exploration_constant=$exploration_constant,n_iterations=$n_iterations,keep_tree=$keep_tree,discount=$discount,nb_robots=$nb_robots,depth=$depth,max_steps=$max_steps,num_map=$num_map/"
+folder = "/alpha_state=$alpha_state,k_state=$k_state,alpha_action=$alpha_action,k_action=$k_action,exploration_constant=$exploration_constant,n_iterations=$n_iterations,keep_tree=$keep_tree,discount=$discount,nb_robots=$nb_robots,depth=$depth,max_steps=$max_steps,num_map=$num_map,extent1=$extent1,extent2=$extent2,nb_blocs=$(nb_blocs)/"
 
 file = folder*"$(N)_$(t0).csv"
 
@@ -37,13 +40,13 @@ catch e
 end
 
 
-nb_steps, cov = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, file="Logs/Cen"*folder, id_expe=N)
+nb_steps, cov = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, file="Logs/Cen"*folder, id_expe=N, extent=(extent1,extent2), nb_blocs=nb_blocs)
 
 
-df = DataFrame(alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, nb_steps = nb_steps, cov=cov)
+df = DataFrame(alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, extent=(extent1,extent2), nb_blocs=nb_blocs, nb_steps = nb_steps, cov=cov)
 
 CSV.write("Resultats/Cen"*file, df, writeheader=true, delim = ';', append=true)
 
 log_file = open("Resultats/Cen/log_julia.txt", "a")
-write(log_file, "run $(N); time = $(t0); alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, nb_steps = $(nb_steps), cov = $cov")
+write(log_file, "run $(N); time = $(t0); alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, extent = ($(extent1),$(extent2)), nb_blocs = $nb_blocs, nb_steps = $(nb_steps), cov = $cov")
 close(log_file)

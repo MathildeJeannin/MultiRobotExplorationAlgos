@@ -44,7 +44,8 @@ end
 function POMDPs.reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
     nb_robots = length(s.robots_states)
 
-    r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap)) + count(x->x!=0, sp.seen)
+    # r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap)) + count(x->x!=0, sp.seen)
+    r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap))
     
     return r
 end

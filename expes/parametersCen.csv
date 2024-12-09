@@ -1,3 +1,4 @@
-alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map
-1,1,1,10,1,1500,0,0.85,3,50,100,2
-1,1,1,10,1,1500,0,0.85,3,50,100,3
+alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map,extent1,extent2,nb_blocs
+1,1,1,1,500,1500,0,0.85,3,50,100,2,0,0,0
+1,1,1,1,500,1500,0,0.85,3,50,100,3,0,0,0
+1,1,1,1,500,1500,0,0.85,3,50,100,-1,20,20,4

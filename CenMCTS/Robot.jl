@@ -23,7 +23,8 @@ function initialize_model(;
     keep_tree = false,
     max_time = 60.0,
     show_progress = false,
-    max_steps = 100
+    max_steps = 100,
+    nb_blocs = 0
 )
 
     nb_robots = N
@@ -64,7 +65,7 @@ function initialize_model(;
     if num_map > 0
         add_map(model, num_map, nb_robots)
     elseif num_map < 0
-        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
+        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     else
         add_obstacles(model; N = nb_obstacles[1], extent = extent)
     end

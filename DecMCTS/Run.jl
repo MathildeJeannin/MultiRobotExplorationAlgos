@@ -32,7 +32,9 @@ function run(;
     show_progress = false,
     max_steps = 100,
     num_map = 2,
+    nb_blocs = 0,
     com_range = 10,
+    vis_range = 3,
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
@@ -51,7 +53,6 @@ function run(;
         fct_sequence = getfield(Main, Symbol(fct_sequence))
     end
 
-    vis_range = 3
     invisible_cells = [0]
     if num_map > 0 
         f = open("../src/maps/map$num_map.txt", "r")
@@ -85,7 +86,8 @@ function run(;
         begin_zone = (1,1),
         vis_range = vis_range,    
         com_range = com_range,
-        invisible_cells = invisible_cells
+        invisible_cells = invisible_cells,
+        nb_blocs = nb_blocs
     )
 
     robots = [model[i] for i in 1:nb_robots]
@@ -241,19 +243,30 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     nb_communication = 1,
     alpha = 0.01
     )
-    robots = [model[i] for i in eachindex(model[1].plans)]
+    nb_robots = length(model[1].plans)
+    robots = [model[i] for i in 1:nb_robots]
     extent = size(robots[1].state.gridmap)
 
     percent_of_map = zeros(length(robots)+1)
     astar_distances = zeros((length(robots), length(robots)))
     euclidean_distances = zeros((length(robots), length(robots)))
     
-    percent_of_map[end] = count(x->any(x.>0), [abmproperties(model).seen_all_gridmap[i,j,:] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
+    tmp = 0
+    for i in 1:extent[1]
+        for j in 1:extent[2]
+            v = [abmproperties(model).seen_all_gridmap[r][i,j] for r in 1:nb_robots]
+            if any(v.>0)
+                tmp+=1
+            end
+        end
+    end
+
+    percent_of_map[end] = tmp/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
     df = DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_all" => percent_of_map[end])
 
     for robot in robots
 
-        percent_of_map[robot.id] = count(x-> x>0, [abmproperties(model).seen_all_gridmap[i,j,robot.id] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
+        percent_of_map[robot.id] = count(x-> x>0, [abmproperties(model).seen_all_gridmap[robot.id][i,j] for i in 1:extent[1] for j in 1:extent[2]])/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
 
         for robot_prime in filter(x->x.id!=robot.id,robots[robot.id+1:end])
             astar_distances[robot.id, robot_prime.id] = length(plan_route!(robot, robot_prime.pos, pathfinder))
@@ -262,7 +275,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
             euclidean_distances[robot_prime.id, robot.id] = euclidean_distances[robot.id, robot_prime.id]
         end
 
-        df = innerjoin(df, DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_$(robot.id)" => percent_of_map[robot.id], "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]], "seen_gridmap_$(robot.id)" => [abmproperties(model).seen_all_gridmap[:,:,robot.id]]), on = "nb_steps")
+        df = innerjoin(df, DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_$(robot.id)" => percent_of_map[robot.id], "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]], "seen_gridmap_$(robot.id)" => [abmproperties(model).seen_all_gridmap[robot.id][:,:]]), on = "nb_steps")
         
     end
 

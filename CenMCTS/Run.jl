@@ -32,7 +32,8 @@ function run(;
     com_range = 10,
     penalite = false,
     id_expe = 0,
-    file = ""
+    file = "",
+    nb_blocs = 0
     )
 
     global use_penalite = penalite
@@ -75,7 +76,8 @@ function run(;
         keep_tree = keep_tree, 
         max_time = max_time, 
         show_progress = show_progress,
-        max_steps = max_steps
+        max_steps = max_steps,
+        nb_blocs = nb_blocs
     )
 
     robots = [model[i] for i in 1:nb_robots]

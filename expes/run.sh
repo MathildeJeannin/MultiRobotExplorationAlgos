@@ -12,21 +12,21 @@ mkdir Logs/Dec
 # echo "Finished executing"
 
 n=0
-ni=1
-nj=2
+ni=20
+nj=5
 start=1
 
 # chaque parametre est testé ni*nj fois et il y a nj simulations lancées en même temps
 # lancer avec tmux puis fait ctrl+b puis d pour quitter le terminal tmux
 # faire tmux attach pour recuperer la session
 
-while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12
+while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 rec_column14 rec_column15
 do
     for ((i=$start; i<=$ni; i++))
     do 
         for ((j=$start; j<=$nj; j++))
         do  
-            julia ExecuteCen.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $((n+j)) &
+            julia ExecuteCen.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $rec_column13 $rec_column14 $rec_column15 $((n+j)) &
         done
         echo "Creating $nj simu, n = $n" >> log_bashCen.txt
         wait 
@@ -41,17 +41,17 @@ echo "All done" >> log_bashCen.txt
 
 
 n=0
-ni=1
-nj=2
+ni=20
+nj=5
 start=1
 
-while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 
+while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 rec_column14 rec_column15 rec_column16 rec_column17
 do
     for ((i=$start; i<=$ni; i++))
     do 
         for ((j=$start; j<=$nj; j++))
         do  
-            julia ExecuteDec.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $rec_column13 $((n+j)) &
+            julia ExecuteDec.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $rec_column13 $rec_column14 $rec_column15 $rec_column16 $rec_column17 $((n+j)) &
         done
         echo "Creating $nj simu, n = $n" >> log_bashDec.txt
         wait 

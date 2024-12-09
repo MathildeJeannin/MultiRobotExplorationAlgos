@@ -44,6 +44,8 @@ function add_simple_obstacles(model, extent, nb_robots; N = 1, min_obstacle_size
         x = rand(2:extent[1] - obstacle_width - 1)
         y = rand(2:extent[2] - obstacle_height - 1)
 
+        println(x)
+
         if is_valid_position(model, extent, x, y, obstacle_width, obstacle_height)
             count += 1
             invisible_cells += (obstacle_width - 1)*(obstacle_height - 1)
