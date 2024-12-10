@@ -52,7 +52,7 @@ function initialize_model(
         properties = properties
     )
 
-    abmproperties(model).max_cell_in_scan[1] = maxCellInScan(vis_range, model)
+    #abmproperties(model).max_cell_in_scan[1] = maxCellInScan(vis_range, model)
 
     #obstacles
     if num_map == 0
