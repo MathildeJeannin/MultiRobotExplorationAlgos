@@ -48,5 +48,5 @@ df = DataFrame(alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_acti
 CSV.write("Resultats/Cen"*file, df, writeheader=true, delim = ';', append=true)
 
 log_file = open("Resultats/Cen/log_julia.txt", "a")
-write(log_file, "run $(N); time = $(t0); alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, extent = ($(extent1),$(extent2)), nb_blocs = $nb_blocs, nb_steps = $(nb_steps), cov = $cov")
+write(log_file, "run $(N); time = $(t0); alpha_state=$alpha_state, k_state=$k_state, alpha_action=$alpha_action, k_action=$k_action, exploration_constant=$exploration_constant,n_iterations=$n_iterations, keep_tree=$keep_tree, discount=$discount, nb_robots=$nb_robots, depth=$depth, max_steps=$max_steps, num_map=$num_map, extent = ($(extent1),$(extent2)), nb_blocs = $nb_blocs, nb_steps = $(nb_steps), cov = $cov\n")
 close(log_file)
