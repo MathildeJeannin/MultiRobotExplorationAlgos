@@ -9,7 +9,8 @@ function initialize_model(
     begin_zone = (1,1), 
     vis_range = 3.0,
     com_range = 2.0,
-    invisible_cells = 0
+    invisible_cells = 0,
+    nb_blocs = 3
 )
     
     # initialize model
@@ -25,6 +26,8 @@ function initialize_model(
     T1 = Tuple(i for i in 1:begin_zone[1])
     T2 = Tuple(i for i in 1:begin_zone[2])
 
+    invisible_cells = [invisible_cells]
+    nb_obstacles = [nb_obstacles]
 
     properties = (
         seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent))) for i in 1:nb_robots),
@@ -47,7 +50,7 @@ function initialize_model(
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
     else 
-        abmproperties(model).invisible_cells[1] = add_simple_obstacles(model, extent, nb_robots; N = 3)
+        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     end
 
     walkmap = BitArray{2}(trues(extent[1],extent[2]))

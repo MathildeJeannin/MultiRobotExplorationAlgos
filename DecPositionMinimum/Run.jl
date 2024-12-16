@@ -19,11 +19,12 @@ function run(;
     max_steps = 100,
     num_map = 2,
     com_range = 10,
-    id_expe = 0
+    id_expe = 0,
+    nb_blocs = 3
     )
 
     vis_range = 3
-    invisible_cells = [0]
+    invisible_cells = 0
     if num_map > 0 
         f = open("../src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
@@ -31,7 +32,7 @@ function run(;
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = [parse(Int64, line_triche)]
+        invisible_cells = parse(Int64, line_triche)
         nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
     end
 
@@ -43,7 +44,8 @@ function run(;
         begin_zone = (1,1),
         vis_range = vis_range,    
         com_range = com_range,
-        invisible_cells = invisible_cells
+        invisible_cells = invisible_cells,
+        nb_blocs = nb_blocs
     )
 
     robots = [model[i] for i in 1:nb_robots]

@@ -141,8 +141,7 @@ end
 function special_Q(m::RobotMDP, s::State, a::Action)
     next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], 1, a.direction)
     if next_pos == s.robots_states[s.id].pos
-        # println("action = $a, pos = $(s.robots_states[s.id].pos), next_pos = $(next_pos)")
-        return -100.0
+        return -1000000.0
     else
         return 0.0
     end

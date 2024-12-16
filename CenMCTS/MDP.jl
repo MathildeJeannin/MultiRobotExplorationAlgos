@@ -112,7 +112,7 @@ function special_Q(m::RobotMDP, s::StateCen, a::ActionCen)
         next_pos[rs.id], _ = compute_new_pos(s.gridmap, rs.id, next_pos, 1, a.directions[rs.id].direction)
     end
     if any(next_pos .== [rs.pos for rs in s.robots_states])
-        return -100.0
+        return -1000000.0
     else
         return 0.0
     end

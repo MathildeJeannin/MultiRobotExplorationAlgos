@@ -67,7 +67,7 @@ function initialize_model(;
     elseif num_map < 0
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     else
-        add_obstacles(model; N = nb_obstacles[1], extent = extent)
+        add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
     end
 
     walkmap = BitArray{2}(trues(extent[1],extent[2]))
@@ -107,7 +107,7 @@ function initialize_model(;
 
     my_policy = FrontierPolicy(mdp)
 
-    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant, init_N=special_N, init_Q=special_Q)
+    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant, init_Q=special_Q, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
 
     global planner = solve(solver, mdp)
 
@@ -137,7 +137,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
     nb_coups = state.nb_coups + 1
 
     for robot in robots
-        next_robots_states[robot.id] = RobotState(robot.id, robot.pos)
+        next_robots_states[robot.id] = deepcopy(RobotState(robot.id, robot.pos))
     end
 
     all_robots_pos = [robot.pos for robot in robots]
