@@ -87,10 +87,10 @@ function initialize_model(
 
         mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions)
 
-        # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
+        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
         my_policy = FrontierPolicy(mdp)
 
-        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(my_policy), init_N=special_N, init_Q=special_Q)
+        # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(my_policy), init_N=special_N, init_Q=special_Q)
 
         planner = solve(solver, mdp)
 
@@ -138,10 +138,10 @@ function agents_simulate!(robot, model, alpha, beta;
 
             robot.rollout_parameters.debut_rollout = robot.state.nb_coups
             robot.rollout_parameters.in_rollout = true
-            try 
-                action_info(robot.planner, robot.state)
-            catch e
-            end
+            # try 
+            action_info(robot.planner, robot.state)
+            # catch e
+            # end
             robot.rollout_parameters.in_rollout = false
 
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
@@ -172,16 +172,16 @@ function agent_step!(robot, model, vis_tree)
             robots_pos[n.id] = n.pos
         end
 
-        new_pos,_ = compute_new_pos(robot.state.gridmap, robot.id, robots_pos, robot.vis_range, a.direction)
+        new_pos,_ = compute_new_pos(robot.state.gridmap, robot.id, robots_pos, 1, a.direction)
         move_agent!(robot, new_pos, model)
+
+        robot.state = State(robot.id, deepcopy(robot.state.robots_states), deepcopy(robot.state.gridmap), robot.state.known_cells, robot.state.seen_cells, robot.state.nb_coups+1)
 
         robot.state.robots_states[robot.id] = RobotState(robot.id, robot.pos)
         robot.plans[robot.id].state = RobotState(robot.id, robot.pos)
         robots_pos[robot.id] = robot.pos
 
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
-
-        robot.state = State(robot.id, robot.state.robots_states, robot.state.gridmap, robot.state.known_cells, robot.state.seen_cells, robot.state.nb_coups+1)
 
         robot.state.known_cells, robot.state.seen_cells = gridmap_update!(robot.state.gridmap, robot.state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.seen_cells)
 

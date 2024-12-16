@@ -80,20 +80,20 @@ function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_p
     return known_cells, seen_cells
 end
 
-function compute_new_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action::Tuple; goal = nothing)
+function compute_new_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, distance_to_move::Int, action::Tuple; goal = nothing)
     pos = robots_pos[id]
     other_robots_pos = robots_pos[1:end .!= id, :]
 
     extent = size(gridmap)
 
     if !isnothing(goal) 
-        ray = raytracing(pos, goal, vis_range)
+        ray = raytracing(pos, goal, distance_to_move)
     else
-        ray = raytracing(pos, (vis_range .* action) .+ pos, vis_range)
+        ray = raytracing(pos, (distance_to_move .* action) .+ pos, distance_to_move)
     end
     x,y = ray[1][1],ray[1][2]
 
-    visible_robots = nearby_robots(pos, model, vis_range)
+    visible_robots = nearby_robots(pos, model, distance_to_move)
 
     if length(ray)==1
         return (x,y), (0,0)
@@ -346,10 +346,10 @@ function check_for_invisible_obstacles!(gridmap)
 end
 
 
-function _print_coverage_map(coverage_map::MVector)
+function _print_coverage_map(coverage_map::Union{MVector,Vector}, mode::String)
     nb_robots = length(coverage_map)
-    # max_value = maximum([maximum(cov[i]) for i in 1:nb_robots])
-    max_value = 10
+    max_value = maximum([maximum(coverage_map[i]) for i in 1:nb_robots])
+    # max_value = 20
     a = round(Int64, sqrt(nb_robots))
     b = ceil(Int64, nb_robots/a)
     x = 1
@@ -360,11 +360,25 @@ function _print_coverage_map(coverage_map::MVector)
         for j in 1:b
             if x <= nb_robots
                 ax = Axis(f[i,j])
-                heatmap!(ax, Matrix(cov[x]), colorrange = (0,max_value))
+                heatmap!(ax, Matrix(coverage_map[x]), colorrange = (0,max_value))
                 x+=1
             end
         end
     end
     Colorbar(f[end,end+1], colorrange = (0,max_value))
+    supertitle = Label(f[0,:], mode)
     display(f)
+    # save(mode*"_map3_meancov.png", f)
+end
+
+
+function mean_cov(coverage_map)
+    extent = size(coverage_map[1])
+    output = Matrix{Float64}(zeros(extent[1],extent[2]))
+    for i in 1:extent[1]
+        for j in 1:extent[2]
+            output[i,j] = mean(x[i,j] for x in coverage_map)
+        end
+    end
+    return output
 end

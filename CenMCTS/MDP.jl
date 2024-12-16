@@ -28,7 +28,7 @@ function POMDPs.transition(m::RobotMDP, s::StateCen, a::ActionCen)
 
             action = a.directions[rs.id].direction
 
-            next_pos, obstacle_pos = compute_new_pos(next_gridmap, rs.id, all_robots_pos, m.vis_range, action)
+            next_pos, obstacle_pos = compute_new_pos(next_gridmap, rs.id, all_robots_pos, 1, action)
             next_robots_states[rs.id] = RobotState(rs.id, next_pos)
             all_robots_pos[rs.id] = next_pos
 
@@ -109,7 +109,7 @@ end
 function special_Q(m::RobotMDP, s::StateCen, a::ActionCen)
     next_pos = [rs.pos for rs in s.robots_states]
     for rs in s.robots_states
-        next_pos[rs.id], _ = compute_new_pos(s.gridmap, rs.id, next_pos, m.vis_range, a.directions[rs.id].direction)
+        next_pos[rs.id], _ = compute_new_pos(s.gridmap, rs.id, next_pos, 1, a.directions[rs.id].direction)
     end
     if any(next_pos .== [rs.pos for rs in s.robots_states])
         return -100.0
@@ -120,14 +120,14 @@ end
 
 
 
-function special_N(m::RobotMDP, s::StateCen, a::ActionCen)
-    next_pos = [rs.pos for rs in s.robots_states]
-    for rs in s.robots_states
-        next_pos[rs.id], _ = compute_new_pos(s.gridmap, rs.id, next_pos, m.vis_range, a.directions[rs.id].direction)
-    end
-    if any(next_pos .== [rs.pos for rs in s.robots_states])
-        return 1000000
-    else
-        return 0
-    end
-end
+# function special_N(m::RobotMDP, s::StateCen, a::ActionCen)
+#     next_pos = [rs.pos for rs in s.robots_states]
+#     for rs in s.robots_states
+#         next_pos[rs.id], _ = compute_new_pos(s.gridmap, rs.id, next_pos, 1, a.directions[rs.id].direction)
+#     end
+#     if any(next_pos .== [rs.pos for rs in s.robots_states])
+#         return 1000000
+#     else
+#         return 0
+#     end
+# end

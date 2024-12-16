@@ -31,7 +31,7 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
             end
         end
 
-        next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, a.direction)
+        next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, a.direction)
 
         next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
@@ -47,7 +47,7 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
                     action = rand(m.possible_actions)
                 end
                 
-                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, action.direction)
+                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
 
                 next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
 
@@ -79,10 +79,10 @@ function POMDPs.reward(m::RobotMDP, s::State, a::Action, sp::State)
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
     max_Q = (nb_robots-1)*f(mu) + f(0)
     Q = 0 
-    for i in eachindex(length(sp.robots_states))
-        d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
-        Q += f(d)
-    end
+    # for i in eachindex(length(sp.robots_states))
+    #     d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
+    #     Q += f(d)
+    # end
     # return r/max_r + Q/max_Q -> fonctionne pas car si aucune cellule vues mais que robots proches les uns des autres = bonne reward
     return r+Q
 end
@@ -139,8 +139,9 @@ end
 
 
 function special_Q(m::RobotMDP, s::State, a::Action)
-    next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], m.vis_range, a.direction)
+    next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], 1, a.direction)
     if next_pos == s.robots_states[s.id].pos
+        # println("action = $a, pos = $(s.robots_states[s.id].pos), next_pos = $(next_pos)")
         return -100.0
     else
         return 0.0
@@ -149,11 +150,11 @@ end
 
 
 
-function special_N(m::RobotMDP, s::State, a::Action)
-    next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], m.vis_range, a.direction)
-    if next_pos == s.robots_states[s.id].pos
-        return 10000000
-    else
-        return 0
-    end
-end
+# function special_N(m::RobotMDP, s::State, a::Action)
+#     next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], 1, a.direction)
+#     if next_pos == s.robots_states[s.id].pos
+#         return 10000000
+#     else
+#         return 0
+#     end
+# end

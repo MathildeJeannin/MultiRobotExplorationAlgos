@@ -107,7 +107,7 @@ function initialize_model(;
 
     my_policy = FrontierPolicy(mdp)
 
-    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant, init_N=special_N, init_Q=special_Q)
+    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant, init_N=special_N, init_Q=special_Q)
 
     global planner = solve(solver, mdp)
 
@@ -147,7 +147,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
         action = a.directions[id].direction
         pos = robot.pos
         
-        next_pos,_ = compute_new_pos(next_gridmap, id, all_robots_pos, vis_range,  action)
+        next_pos,_ = compute_new_pos(next_gridmap, id, all_robots_pos, 1,  action)
         move_agent!(robot, next_pos, model)
         next_robots_states[id] = RobotState(id, next_pos)
         all_robots_pos[id] = next_pos

@@ -92,14 +92,14 @@ function agent_step!(model)
     for robot in robots
         scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
         
-        while !isempty(memory.plan[robot.id]) && memory.plan[robot.id][1] in scan
-            action = (memory.plan[robot.id][1][1]-robot.pos[1], memory.plan[robot.id][1][2]-robot.pos[2])./distance(memory.plan[robot.id][1], robot.pos)
+        # while !isempty(memory.plan[robot.id]) && memory.plan[robot.id][1] in scan
+        action = (memory.plan[robot.id][1][1]-robot.pos[1], memory.plan[robot.id][1][2]-robot.pos[2])./distance(memory.plan[robot.id][1], robot.pos)
 
-            new_pos, _ = compute_new_pos(memory.gridmap, robot.id, all_robots_pos, 1, action)
-            move_agent!(robot, new_pos, model)
-            all_robots_pos[robot.id] = new_pos
-            deleteat!(memory.plan[robot.id],1)
-        end        
+        new_pos, _ = compute_new_pos(memory.gridmap, robot.id, all_robots_pos, 1, action)
+        move_agent!(robot, new_pos, model)
+        all_robots_pos[robot.id] = new_pos
+        deleteat!(memory.plan[robot.id],1)
+        # end        
         
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
         gridmap_update!(memory.gridmap, 0, robot.id,all_robots_pos, robot.vis_range, obstacles_pos, model)
