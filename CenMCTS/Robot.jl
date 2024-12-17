@@ -73,11 +73,18 @@ function initialize_model(;
     walkmap = BitArray{2}(trues(extent[1],extent[2]))
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
+    pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
     for n ∈ 1:N
-        pos = (rand(T1),rand(T2))
+        pos[n] = (rand(T1),rand(T2))
+        while !isempty(ids_in_position(pos[n], model))
+            pos[n] = (rand(T1),rand(T2))
+        end
+    end
+
+    for n in 1:N
         id = n
-        agent = RobotCen{D}(id, pos, vis_range, pathfinder, Set())
-        add_agent!(agent, pos, model)
+        agent = RobotCen{D}(id, pos[n], vis_range, pathfinder, Set())
+        add_agent!(agent, pos[n], model)
     end
 
     robots_states = Vector{RobotState}(undef, nb_robots)
@@ -107,7 +114,7 @@ function initialize_model(;
 
     my_policy = FrontierPolicy(mdp)
 
-    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = alpha_action, exploration_constant = exploration_constant, init_Q=special_Q, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
+    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_Q=special_Q, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
 
     global planner = solve(solver, mdp)
 

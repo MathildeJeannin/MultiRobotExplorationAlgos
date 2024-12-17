@@ -33,7 +33,8 @@ function run(;
     penalite = false,
     id_expe = 0,
     file = "",
-    nb_blocs = 0
+    nb_blocs = 0,
+    begin_zone = (1,1)
     )
 
     global use_penalite = penalite
@@ -58,7 +59,6 @@ function run(;
     global model, state = initialize_model(;
         N = nb_robots,                 # number of agents
         extent = extent,               # size of the world
-        begin_zone = (1,1),
         vis_range = vis_range,       # visibility range
         com_range = com_range,       # communication range
         seed = rand(1:10^39), 
@@ -77,7 +77,8 @@ function run(;
         max_time = max_time, 
         show_progress = show_progress,
         max_steps = max_steps,
-        nb_blocs = nb_blocs
+        nb_blocs = nb_blocs,
+        begin_zone = begin_zone
     )
 
     robots = [model[i] for i in 1:nb_robots]
