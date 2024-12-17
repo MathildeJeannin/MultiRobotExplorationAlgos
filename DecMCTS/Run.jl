@@ -41,6 +41,7 @@ function run(;
     nb_communication = 1,
     alpha = 0.01,
     file = "",
+    begin_zone = (1,1),
     id_expe = 0
     )
 
@@ -83,7 +84,7 @@ function run(;
         depth,
         max_time, 
         show_progress;
-        begin_zone = (1,1),
+        begin_zone = begin_zone,
         vis_range = vis_range,    
         com_range = com_range,
         invisible_cells = invisible_cells,
