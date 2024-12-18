@@ -18,7 +18,7 @@ function POMDPs.transition(m::RobotMDP, s::StateCen, a::ActionCen)
             next_robots_states[robot.id] = RobotState(robot.id, robot.pos)
         end
         next_gridmap = deepcopy(s.gridmap)
-        next_seen = [0,0,0]
+        next_seen = [0 for i in eachindex(s.robots_states)]
         # next_seen_gridmap = deepcopy(s.seen_gridmap)
 
         distribution = SparseCat([-1,0],[0,1.0])
@@ -44,8 +44,8 @@ end
 function POMDPs.reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
     nb_robots = length(s.robots_states)
 
-    # r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap)) + count(x->x!=0, sp.seen)
-    r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap))
+    r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap)) + count(x->x!=0, sp.seen)*5
+    # r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap))
     
     return r
 end
