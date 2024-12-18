@@ -62,8 +62,8 @@ end
    
 
 function is_valid_position(model, extent, x, y, width, height)
-    x_min = max(1, x-1)
-    y_min = max(1, y-1)
+    x_min = max(5, x-1)
+    y_min = max(5, y-1)
     x_max = min(extent[1], x + width + 1)
     y_max = min(extent[2], y + height + 1)
 
