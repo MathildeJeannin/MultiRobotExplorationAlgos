@@ -1,0 +1,7 @@
+Creating 5 simu, n = 0
+Finished 5 simu, n = 5
+Creating 5 simu, n = 5
+Finished 5 simu, n = 10
+Creating 5 simu, n = 10
+Finished 5 simu, n = 15
+Creating 5 simu, n = 15
