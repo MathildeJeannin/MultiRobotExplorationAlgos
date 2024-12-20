@@ -37,6 +37,7 @@ struct RobotMDP <: MDP{Union{State,StateCen}, Union{Action,ActionCen}}
     nb_obstacle::Int64
     discount::Float64
     possible_actions::Union{Vector{Action}, Vector{ActionCen}}
+    reward_function::Function
 end
 
 
@@ -82,6 +83,7 @@ mutable struct RobotDec{D} <: AbstractAgent
     planner::DPWPlanner
     pathfinder::Any
     frontiers::Set
+    last_comm::Int64
 end
 
 
@@ -95,6 +97,7 @@ mutable struct RobotPosMin{D} <: AbstractAgent
     pathfinder::Any
     plan::Vector
     frontiers::Set
+    last_comm::Int64
 end
 
 mutable struct SharedMemory

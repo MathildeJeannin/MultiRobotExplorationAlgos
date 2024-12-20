@@ -63,28 +63,31 @@ end
 
 
 function POMDPs.reward(m::RobotMDP, s::State, a::Action, sp::State)
+    return m.reward_function(m,s,a,sp)
+end
+
+
+function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
     robot = model[s.id]
     nb_robots = length(s.robots_states)
 
     r = sp.seen_cells - s.seen_cells
-    # max_r = abmproperties(model).max_cell_in_scan[1]
-
-    # a = -4/(robot.com_range - robot.vis_range)^2
-    # b = -a*(robot.com_range + robot.vis_range)
-    # c = a*(robot.com_range*robot.vis_range)
-    # f(x) = a*x^2+b*x+c
 
     mu = (robot.vis_range+robot.com_range)/2
     sigma = (robot.com_range-robot.vis_range)/4
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
     max_Q = (nb_robots-1)*f(mu) + f(0)
     Q = 0 
-    # for i in eachindex(length(sp.robots_states))
-    #     d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
-    #     Q += f(d)
-    # end
-    # return r/max_r + Q/max_Q -> fonctionne pas car si aucune cellule vues mais que robots proches les uns des autres = bonne reward
+    for i in eachindex(length(sp.robots_states))
+        d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
+        Q += f(d)
+    end
     return r+Q
+end
+
+
+function simple_reward(m::RobotMDP, s::State, a::Action, sp::State)
+    return sp.seen_cells - s.seen_cells
 end
 
 

@@ -34,7 +34,8 @@ function run(;
     id_expe = 0,
     file = "",
     nb_blocs = 0,
-    begin_zone = (1,1)
+    begin_zone = (1,1),
+    reward_function = all_move_reward
     )
 
     global use_penalite = penalite
@@ -78,7 +79,8 @@ function run(;
         show_progress = show_progress,
         max_steps = max_steps,
         nb_blocs = nb_blocs,
-        begin_zone = begin_zone
+        begin_zone = begin_zone,
+        reward_function = all_move_reward
     )
 
     robots = [model[i] for i in 1:nb_robots]

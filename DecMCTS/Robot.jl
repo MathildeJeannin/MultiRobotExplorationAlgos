@@ -23,8 +23,10 @@ function initialize_model(
     vis_range = 3.0,
     com_range = 2.0,
     invisible_cells = [0],
-    nb_blocs = 0
+    nb_blocs = 0,
+    reward_function = simple_reward
     )
+
     gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
     # seen_gridmap = MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent)))
 
@@ -85,7 +87,7 @@ function initialize_model(
         robots_states = MVector{nb_robots, RobotState}([robots_plans[i].state for i in 1:nb_robots])
         state = State(id, robots_states, gridmap_n, known_cells, seen_cells, 0)
 
-        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions)
+        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, reward_function)
 
         solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1), init_Q=special_Q)
         
@@ -97,7 +99,7 @@ function initialize_model(
         walkmap = BitArray{2}(trues(extent[1],extent[2]))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        agent = RobotDec{D}(id, pos, vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), (0,0), deepcopy(robots_plans)), state, planner, pathfinder, Set())
+        agent = RobotDec{D}(id, pos, vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), (0,0), deepcopy(robots_plans)), state, planner, pathfinder, Set(), 0)
         add_agent!(agent, pos, model)
     end
 
@@ -126,8 +128,8 @@ function agents_simulate!(robot, model, alpha, beta;
 
     if robot.state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
 
-        for i in 1:nb_communication
 
+        if robot.state.nb_coups - robot.last_comm <= nb_communication
             in_range = nearby_robots(robot, model, robot.com_range)
             for r in in_range
                 exchange_positions!(robot, r)
@@ -135,20 +137,21 @@ function agents_simulate!(robot, model, alpha, beta;
                 exchange_best_sequences!(robot, r)
                 exchange_frontiers!(robot,r)
             end
-
-            robot.rollout_parameters.debut_rollout = robot.state.nb_coups
-            robot.rollout_parameters.in_rollout = true
-            try 
-                action_info(robot.planner, robot.state)
-            catch e
-            end
-            robot.rollout_parameters.in_rollout = false
-
-            robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
-
-            update_distribution!(robot, alpha, beta)
-
+            robot.last_comm = robot.state.nb_coups
         end
+
+        robot.rollout_parameters.debut_rollout = robot.state.nb_coups
+        robot.rollout_parameters.in_rollout = true
+        try 
+            action_info(robot.planner, robot.state)
+        catch e
+        end
+        robot.rollout_parameters.in_rollout = false
+
+        robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
+
+        update_distribution!(robot, alpha, beta)
+
     end
 end
 

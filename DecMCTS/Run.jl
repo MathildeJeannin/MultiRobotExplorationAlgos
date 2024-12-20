@@ -42,6 +42,7 @@ function run(;
     alpha = 0.01,
     file = "",
     begin_zone = (1,1),
+    reward_function = simple_reward,
     id_expe = 0
     )
 
@@ -88,7 +89,8 @@ function run(;
         vis_range = vis_range,    
         com_range = com_range,
         invisible_cells = invisible_cells,
-        nb_blocs = nb_blocs
+        nb_blocs = nb_blocs, 
+        reward_function = reward_function
     )
 
     robots = [model[i] for i in 1:nb_robots]

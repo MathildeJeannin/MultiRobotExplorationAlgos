@@ -24,7 +24,8 @@ function initialize_model(;
     max_time = 60.0,
     show_progress = false,
     max_steps = 100,
-    nb_blocs = 0
+    nb_blocs = 0,
+    reward_function = all_move_reward
 )
 
     nb_robots = N
@@ -110,7 +111,7 @@ function initialize_model(;
 
     possible_actions = compute_actions_cenMCTS(nb_robots)
 
-    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions)
+    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, reward_function)
 
     frontier_policy = FrontierPolicy(mdp)
 

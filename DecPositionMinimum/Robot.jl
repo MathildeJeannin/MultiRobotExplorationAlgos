@@ -109,11 +109,14 @@ function agent_step!(robot, model)
     extent = size(robot.gridmap)
     nb_robots = abmproperties(model).nb_robots
 
-    in_range = nearby_robots(robot, model, robot.com_range)
-    for r in in_range
-        exchange_positions!(robot, r)
-        merge_gridmaps!(robot,r)
-        exchange_frontiers!(robot,r)
+    if robot.state.nb_coups - robot.last_comm <= nb_communication
+        in_range = nearby_robots(robot, model, robot.com_range)
+        for r in in_range
+            exchange_positions!(robot, r)
+            merge_gridmaps!(robot,r)
+            exchange_frontiers!(robot,r)
+        end
+        robot.last_comm = robot.state.nb_coups
     end
 
     # for pos in robot.all_robots_pos

@@ -42,13 +42,19 @@ end
 
 
 function POMDPs.reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
-    nb_robots = length(s.robots_states)
-
-    r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap)) + count(x->x!=0, sp.seen)*5
-    # r = (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap))
-    
-    return r
+    return m.reward_function(m,s,a,sp)
 end
+
+
+function simple_reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
+    return (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap))
+end
+
+
+function all_move_reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
+    return (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap)) + count(x->x!=0, sp.seen)*5
+end
+
 
 
 function POMDPs.isterminal(m::RobotMDP, s::StateCen)
