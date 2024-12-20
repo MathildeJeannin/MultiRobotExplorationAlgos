@@ -36,8 +36,8 @@ function initialize_model(;
 
     D = length(extent)
 
-    global gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
-    seen_gridmap = MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent)))
+    global gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
+    seen_gridmap = MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent)))
 
     T1 = Tuple(i for i in 1:begin_zone[1])
     T2 = Tuple(i for i in 1:begin_zone[2])
@@ -47,7 +47,7 @@ function initialize_model(;
     rollout_parameters = RolloutInfo(false, 1, frontiers, [(0,0) for i in 1:nb_robots], MVector{0,Nothing}())
 
     properties = (
-        seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent))) for i in 1:nb_robots),
+        seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent))) for i in 1:nb_robots),
         nb_obstacles, 
         invisible_cells,
         nb_robots,

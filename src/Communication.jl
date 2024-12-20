@@ -37,7 +37,7 @@ end
 function merge_all_gridmaps(robots::Vector{Robot})
     robots = [model[i] for i in eachindex(model[1].plans)]
     extent = size(robots[1].state.gridmap)
-    full_gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
+    full_gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
     for x in 1:extent[1]
         for y in 1:extent[2]
             for robot in robots

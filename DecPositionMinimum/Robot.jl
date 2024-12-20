@@ -12,8 +12,8 @@ function initialize_model(
     invisible_cells = 0,
     nb_blocs = 3
 )
-    gridmap = MMatrix{extent[1],extent[2]}(Int8.(-2*ones(Int8, extent)))
-    # seen_gridmap = MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent)))
+    gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
+    # seen_gridmap = MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent)))
 
     # initialize model
     space = GridSpace(extent, periodic = false, metric = :euclidean)
@@ -29,7 +29,7 @@ function initialize_model(
     invisible_cells = [invisible_cells]
 
     properties = (
-        seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int8.(zeros(Int8, extent))) for i in 1:nb_robots),
+        seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent))) for i in 1:nb_robots),
         nb_obstacles, 
         invisible_cells,
         nb_robots
