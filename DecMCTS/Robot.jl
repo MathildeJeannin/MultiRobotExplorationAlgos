@@ -69,14 +69,21 @@ function initialize_model(
 
     robots_plans = MVector{nb_robots, RobotPlan}([RobotPlan(RobotState(i,(1,1)), Vector{Vector{Tuple{Int,Action}}}(undef, 0), Vector{Float64}(undef, 0)) for i in 1:nb_robots])
 
+    pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
+    for n ∈ 1:nb_robots
+        pos[n] = (rand(T1),rand(T2))
+        while !isempty(ids_in_position(pos[n], model))
+            pos[n] = (rand(T1),rand(T2))
+        end
+    end
+
     for n in 1:nb_robots
-        pos = (rand(T1),rand(T2))
         id = n
         isObstacle = false
 
-        obstacles_poses = [element.pos for element in nearby_obstacles(pos, model, vis_range)]
+        obstacles_poses = [element.pos for element in nearby_obstacles(pos[n], model, vis_range)]
     
-        robots_plans[id].state = RobotState(id, pos)
+        robots_plans[id].state = RobotState(id, pos[n])
 
         gridmap_n = copy(gridmap)
         # seen_gridmap_n = copy(seen_gridmap)
@@ -99,8 +106,8 @@ function initialize_model(
         walkmap = BitArray{2}(trues(extent[1],extent[2]))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        agent = RobotDec{D}(id, pos, vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), (0,0), deepcopy(robots_plans)), state, planner, pathfinder, Set(), 0)
-        add_agent!(agent, pos, model)
+        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), (0,0), deepcopy(robots_plans)), state, planner, pathfinder, Set(), 0)
+        add_agent!(agent, pos[n], model)
     end
 
     robots = [model[i] for i in 1:nb_robots]
