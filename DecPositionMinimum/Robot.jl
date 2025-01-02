@@ -57,23 +57,30 @@ function initialize_model(
         possible_actions[i] = Action(a)
     end
 
+    pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
+    for n ∈ 1:nb_robots
+        pos[n] = (rand(T1),rand(T2))
+        while !isempty(ids_in_position(pos[n], model))
+            pos[n] = (rand(T1),rand(T2))
+        end
+    end
+
 
     for n ∈ 1:nb_robots
-        pos = (rand(T1),rand(T2))
         id = n
         isObstacle = false
 
-        obstacles_poses = [element.pos for element in nearby_obstacles(pos, model, vis_range)]
+        obstacles_poses = [element.pos for element in nearby_obstacles(pos[n], model, vis_range)]
     
         gridmap_n = copy(gridmap)
 
-        known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, [(1,1) for i in 1:nb_robots], vis_range, obstacles_poses, model)
+        known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, pos, vis_range, obstacles_poses, model)
 
         walkmap = BitArray{2}(trues(extent))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        robot = RobotPosMin{D}(id, pos, vis_range, com_range, gridmap_n, [(1,1) for i in 1:nb_robots], pathfinder, [], Set())
-        add_agent!(robot, pos, model)
+        robot = RobotPosMin{D}(id, pos[n], vis_range, com_range, gridmap_n, pos, pathfinder, [], Set(), 1)
+        add_agent!(robot, pos[n], model)
         
     end
 
@@ -105,18 +112,18 @@ function initialize_model(
 end
 
 
-function agent_step!(robot, model)
+function agent_step!(robot, model,step,nb_communication)
     extent = size(robot.gridmap)
     nb_robots = abmproperties(model).nb_robots
 
-    if robot.state.nb_coups - robot.last_comm <= nb_communication
+    if step - robot.last_comm <= nb_communication
         in_range = nearby_robots(robot, model, robot.com_range)
         for r in in_range
             exchange_positions!(robot, r)
             merge_gridmaps!(robot,r)
             exchange_frontiers!(robot,r)
         end
-        robot.last_comm = robot.state.nb_coups
+        robot.last_comm = step
     end
 
     # for pos in robot.all_robots_pos
@@ -125,14 +132,23 @@ function agent_step!(robot, model)
 
     scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
     
-    # while !isempty(robot.plan) && robot.plan[1] in scan
-    action = (robot.plan[1][1]-robot.pos[1], robot.plan[1][2]-robot.pos[2])./distance(robot.plan[1], robot.pos)
+    if !isempty(robot.plan) && !isempty(robot.plan[1])
+        action = (robot.plan[1][1]-robot.pos[1], robot.plan[1][2]-robot.pos[2])./distance(robot.plan[1], robot.pos)
+        deleteat!(robot.plan,1) 
+    else
+        action = rand([(1.0, 0.0),
+            (0.71, 0.71),
+            (0.0, 1.0),
+            (-0.71, 0.71),
+            (-1.0, 0.0),
+            (-0.71, -0.71),
+            (-0.0, -1.0),
+            (0.71, -0.71)])
+    end
 
     new_pos, _ = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, 1, action)
     move_agent!(robot, new_pos, model)
     robot.all_robots_pos[robot.id] = new_pos
-    deleteat!(robot.plan,1)
-    # end        
     
     obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
     gridmap_update!(robot.gridmap, 0, robot.id, robot.all_robots_pos, robot.vis_range, obstacles_pos, model)

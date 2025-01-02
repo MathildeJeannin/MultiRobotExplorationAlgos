@@ -12,10 +12,10 @@ include("../src/Utils.jl")
 
 function run(; 
     alpha_state = 1.0, 
-    k_state = 500.0, 
-    alpha_action = 1.0,
+    k_state = 1.0, 
+    alpha_action = 3.0,
     k_action = 1.0,
-    exploration_constant = 1.0, 
+    exploration_constant = 20.0, 
     n_iterations = 1000, 
     keep_tree = false, 
     discount = 0.85, 

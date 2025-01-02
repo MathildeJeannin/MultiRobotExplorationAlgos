@@ -15,10 +15,10 @@ global wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(; 
     alpha_state = 1.0, 
-    k_state = 500.0, 
+    k_state = 1.0, 
     alpha_action = 1.0,
     k_action = 1.0,
-    exploration_constant = 500.0, 
+    exploration_constant = 100.0, 
     n_iterations = 500, 
     keep_tree = false, 
     discount = 0.85, 
@@ -42,7 +42,7 @@ function run(;
     alpha = 0.01,
     file = "",
     begin_zone = (1,1),
-    reward_function = simple_reward,
+    fct_reward = simple_reward,
     id_expe = 0
     )
 
@@ -53,6 +53,9 @@ function run(;
     end
     if typeof(fct_sequence) == String
         fct_sequence = getfield(Main, Symbol(fct_sequence))
+    end
+    if typeof(fct_reward) == String
+        fct_reward = getfield(Main, Symbol(fct_reward))
     end
 
     invisible_cells = [0]
@@ -90,7 +93,7 @@ function run(;
         com_range = com_range,
         invisible_cells = invisible_cells,
         nb_blocs = nb_blocs, 
-        reward_function = reward_function
+        fct_reward = fct_reward
     )
 
     robots = [model[i] for i in 1:nb_robots]

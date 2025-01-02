@@ -56,17 +56,24 @@ function initialize_model(
     walkmap = BitArray{2}(trues(extent[1],extent[2]))
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
+    pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
     for n ∈ 1:nb_robots
-        pos = (rand(T1),rand(T2))
+        pos[n] = (rand(T1),rand(T2))
+        while !isempty(ids_in_position(pos[n], model))
+            pos[n] = (rand(T1),rand(T2))
+        end
+    end
+
+    for n ∈ 1:nb_robots
         id = n
 
-        robot = RobotCen{D}(id, pos, vis_range, pathfinder, Set())
-        add_agent!(robot, pos, model) 
+        robot = RobotCen{D}(id, pos[n], vis_range, pathfinder, Set())
+        add_agent!(robot, pos[n], model) 
     end
 
     robots = [model[i] for i in 1:nb_robots]
 
-    all_robots_pos = [r.pos for r in robots]
+    all_robots_pos = pos
 
     for robot in robots
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
@@ -95,14 +102,23 @@ function agent_step!(model)
     for robot in robots
         scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
         
-        # while !isempty(memory.plan[robot.id]) && memory.plan[robot.id][1] in scan
-        action = (memory.plan[robot.id][1][1]-robot.pos[1], memory.plan[robot.id][1][2]-robot.pos[2])./distance(memory.plan[robot.id][1], robot.pos)
-
+        if !isempty(memory.plan[robot.id]) && !isempty(memory.plan[robot.id][1])
+            action = (memory.plan[robot.id][1][1]-robot.pos[1], memory.plan[robot.id][1][2]-robot.pos[2])./distance(memory.plan[robot.id][1], robot.pos)
+            deleteat!(memory.plan[robot.id],1)
+        else
+            action = rand([(1.0, 0.0),
+            (0.71, 0.71),
+            (0.0, 1.0),
+            (-0.71, 0.71),
+            (-1.0, 0.0),
+            (-0.71, -0.71),
+            (-0.0, -1.0),
+            (0.71, -0.71)])
+        end
+ 
         new_pos, _ = compute_new_pos(memory.gridmap, robot.id, all_robots_pos, 1, action)
         move_agent!(robot, new_pos, model)
         all_robots_pos[robot.id] = new_pos
-        deleteat!(memory.plan[robot.id],1)
-        # end        
         
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
         gridmap_update!(memory.gridmap, 0, robot.id,all_robots_pos, robot.vis_range, obstacles_pos, model)
