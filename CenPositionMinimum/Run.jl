@@ -171,3 +171,18 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     CSV.write(file*"$(id_expe).csv", df, delim = ';', header = write_header, append=true)
 
 end
+
+
+
+function execute_one_simu(;file = "", id_expe = 0, nb_robots = 3, num_map = -1, max_steps = 500, extent = (20,20), nb_blocs = 3, begin_zone=(5,5))
+    mkdir("../expes/Resultats/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])")
+
+    mkdir("../expes/Logs/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])")
+
+
+    file = "../expes/Logs/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])/"
+
+    nb_steps,cov = run(max_steps=max_steps, nb_robots=nb_robots, num_map=num_map, extent=extent, nb_blocs=nb_blocs, file=file, id_expe=id_expe)
+    df = DataFrame(nb_robots=nb_robots, max_steps=max_steps, num_map=num_map, begin_zone=begin_zone, nb_steps = nb_steps, cov=cov)
+    CSV.write("../expes/Resultats/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])/$id_expe.csv", df, writeheader=true, delim = ';', append=true)
+end
