@@ -115,7 +115,9 @@ function initialize_model(;
 
     frontier_policy = FrontierPolicy(mdp)
 
-    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_Q=special_Q, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
+    depth = maximum([depth,maximum(extent)*5])
+
+    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_Q=special_Q, init_N=special_N, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
 
     global planner = solve(solver, mdp)
 

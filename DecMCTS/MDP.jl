@@ -125,18 +125,7 @@ function POMDPs.action(rollout_policy::FrontierPolicy, s::State)
     end
 
     a = (plan[1][1]-pos[1], plan[1][2]-pos[2])./distance(plan[1], pos)
-    all_directions = rollout_policy.mdp.possible_actions
-    best_direction = all_directions[1]
-    dist=10000000
-    for d in all_directions
-        tmp_dist = distance(a,d.direction)
-        if tmp_dist < dist
-            dist = tmp_dist
-            best_direction = d
-        end
-    end
-    
-    return best_direction
+    return Action(round.(a, digits=2))    
 end
 
 
@@ -152,11 +141,11 @@ end
 
 
 
-# function special_N(m::RobotMDP, s::State, a::Action)
-#     next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], 1, a.direction)
-#     if next_pos == s.robots_states[s.id].pos
-#         return 10000000
-#     else
-#         return 0
-#     end
-# end
+function special_N(m::RobotMDP, s::State, a::Action)
+    next_pos, obstacle_pos = compute_new_pos(s.gridmap, s.id, [rs.pos for rs in s.robots_states], 1, a.direction)
+    if next_pos == s.robots_states[s.id].pos
+        return 1000000
+    else
+        return 0
+    end
+end
