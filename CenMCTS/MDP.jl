@@ -56,6 +56,23 @@ function all_move_reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
 end
 
 
+function repulsive_reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
+    s = 0
+    d = 0
+    nb_robots = length(s.robots_states)
+    for i in 1:nb_robots
+        for j in i+1:nb_robots
+            d += distance(s.robots_states[i].pos, s.robots_states[j].pos)
+            # if d < 5
+            #     # s -= 5
+            # end
+        end
+    end
+    return simple_reward(m,s,a,sp) + d
+    # return count(x->x!=0, sp.seen)*5
+end
+
+
 
 function POMDPs.isterminal(m::RobotMDP, s::StateCen)
     return count(i->i==-2, s.gridmap) == 0 

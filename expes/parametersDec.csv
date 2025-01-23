@@ -1,5 +1,5 @@
-alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map,com_range,alpha,extent1,extent2,nb_blocs,begin_zone,nb_communication,fct_reward
-1,1,1,1,20,500,0,0.85,5,100,500,4,5,0.01,40,40,5,5,1,simple_reward
-1,1,1,1,20,500,0,0.85,5,100,500,5,5,0.01,40,40,5,5,1,simple_reward
-1,1,1,1,20,500,0,0.85,5,100,500,-1,5,0.01,40,40,8,5,1,simple_reward
-1,1,1,1,20,500,0,0.85,5,100,500,-1,5,0.01,50,50,13,5,1,simple_reward
+alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map,com_range,alpha,extent1,extent2,nb_blocs,begin_zone,nb_communication,fct_reward,fct_communication,use_old_info
+1,1,1,1,20,500,0,0.85,5,100,500,4,5,0.01,40,40,5,5,1,comm_reward,simple_communication!,true
+1,1,1,1,20,500,0,0.85,5,100,500,5,5,0.01,40,40,5,5,1,comm_reward,simple_communication!,false
+1,1,1,1,20,500,0,0.85,5,100,500,-1,5,0.01,40,40,8,5,1,comm_reward,transitive_communication!,true
+1,1,1,1,20,500,0,0.85,5,100,500,-1,5,0.01,40,40,8,5,1,comm_rewardtransitive_communication!,false

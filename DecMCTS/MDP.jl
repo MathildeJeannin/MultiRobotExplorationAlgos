@@ -40,18 +40,21 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
 
         for plan in robot.rollout_parameters.robots_plans
             if plan.state.id != robot.id
+                if m.use_old_info || (!m.use_old_info && s.nb_coups < plan.timestamp)
                 
-                if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (length(plan.best_sequences[1]) >= s.nb_coups - robot.rollout_parameters.debut_rollout + 1)
-                    action = popfirst!(plan.best_sequences[1])
-                else
-                    action = rand(m.possible_actions)
+                    if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (length(plan.best_sequences[1]) >= s.nb_coups - robot.rollout_parameters.debut_rollout + 1)
+                        action = popfirst!(plan.best_sequences[1])
+                        plan.timestamp += 1
+                    else
+                        action = rand(m.possible_actions)
+                    end
+                    
+                    next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
+
+                    next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
+
+                    next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
                 end
-                
-                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
-
-                next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
-
-                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
             end
         end
 
@@ -69,16 +72,12 @@ end
 
 function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
     robot = model[s.id]
-    nb_robots = length(s.robots_states)
-
     r = sp.seen_cells - s.seen_cells
 
-    mu = (robot.vis_range+robot.com_range)/2
-    sigma = (robot.com_range-robot.vis_range)/4
-    f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
-    max_Q = (nb_robots-1)*f(mu) + f(0)
-    Q = 0 
-    for i in eachindex(length(sp.robots_states))
+    f(x) = 5/(1+exp(x-robot.com_range))
+    Q=0
+
+    for i in eachindex(sp.robots_states)
         d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
         Q += f(d)
     end

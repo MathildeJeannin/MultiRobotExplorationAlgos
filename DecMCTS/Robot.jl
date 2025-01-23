@@ -24,7 +24,8 @@ function initialize_model(
     com_range = 2.0,
     invisible_cells = [0],
     nb_blocs = 0,
-    fct_reward = simple_reward
+    fct_reward = simple_reward,
+    use_old_info=true
     )
 
     gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
@@ -67,7 +68,7 @@ function initialize_model(
 
     possible_actions = compute_actions_decMCTS()
 
-    robots_plans = MVector{nb_robots, RobotPlan}([RobotPlan(RobotState(i,(1,1)), Vector{Vector{Tuple{Int,Action}}}(undef, 0), Vector{Float64}(undef, 0)) for i in 1:nb_robots])
+    robots_plans = MVector{nb_robots, RobotPlan}([RobotPlan(RobotState(i,(1,1)), Vector{Vector{Tuple{Int,Action}}}(undef, 0), Vector{Float64}(undef, 0), 0) for i in 1:nb_robots])
 
     pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
     for n ∈ 1:nb_robots
@@ -96,7 +97,7 @@ function initialize_model(
         robots_states = MVector{nb_robots, RobotState}([robots_plans[i].state for i in 1:nb_robots])
         state = State(id, robots_states, gridmap_n, known_cells, seen_cells, 0)
 
-        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, fct_reward)
+        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, fct_reward, use_old_info)
 
         solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1), init_Q=special_Q, init_N=special_N)
         
@@ -108,7 +109,7 @@ function initialize_model(
         walkmap = BitArray{2}(trues(extent[1],extent[2]))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[]) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), (0,0), deepcopy(robots_plans)), state, planner, pathfinder, Set(), 0)
+        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{Action}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(false, 0, Set(), (0,0), deepcopy(robots_plans)), state, planner, pathfinder, Set(), 0)
         add_agent!(agent, pos[n], model)
     end
 
@@ -131,7 +132,8 @@ function agents_simulate!(robot, model, alpha, beta;
     nb_sequence = 3,
     fct_proba = compute_q,
     fct_sequence = state_best_average_action, 
-    nb_communication = 1
+    nb_communication = 1,
+    fct_communication = simple_communication!
     )
     extent = size(model[1].state.gridmap)
 
@@ -141,10 +143,7 @@ function agents_simulate!(robot, model, alpha, beta;
         if robot.state.nb_coups - robot.last_comm <= nb_communication
             in_range = nearby_robots(robot, model, robot.com_range)
             for r in in_range
-                exchange_positions!(robot, r)
-                merge_gridmaps!(robot,r)
-                exchange_best_sequences!(robot, r)
-                exchange_frontiers!(robot,r)
+                simple_communication!(robot,r)
             end
             robot.last_comm = robot.state.nb_coups
         end

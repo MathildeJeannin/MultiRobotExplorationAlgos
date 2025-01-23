@@ -27,13 +27,13 @@ function run(;
     extent = (20,20),
     vis_figure = false,
     vis_tree = false,
-    depth = 50,
+    depth = 100,
     max_time = 60.0, 
     show_progress = false,
     max_steps = 100,
     num_map = 2,
     nb_blocs = 0,
-    com_range = 5,
+    com_range = 10,
     vis_range = 3,
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
@@ -43,6 +43,8 @@ function run(;
     file = "",
     begin_zone = (1,1),
     fct_reward = simple_reward,
+    use_old_info = true,
+    fct_communication = simple_communication!,
     id_expe = 0
     )
 
@@ -93,7 +95,8 @@ function run(;
         com_range = com_range,
         invisible_cells = invisible_cells,
         nb_blocs = nb_blocs, 
-        fct_reward = fct_reward
+        fct_reward = fct_reward,
+        use_old_info = use_old_info
     )
 
     robots = [model[i] for i in 1:nb_robots]
@@ -136,7 +139,7 @@ function run(;
 
         
         @threads for robot in robots 
-            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, nb_communication = nb_communication)
+            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, nb_communication = nb_communication, fct_communication = simple_communication!)
         end
 
         # wait_for_key("press any key to continue")

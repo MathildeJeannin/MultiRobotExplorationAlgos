@@ -38,6 +38,7 @@ struct RobotMDP <: MDP{Union{State,StateCen}, Union{Action,ActionCen}}
     discount::Float64
     possible_actions::Union{Vector{Action}, Vector{ActionCen}}
     reward_function::Function
+    use_old_info::Bool
 end
 
 
@@ -45,6 +46,7 @@ end
     state::RobotState
     best_sequences::Vector{MutableLinkedList{Action}}
     assigned_proba::Vector{Float64}
+    timestamp::Int
 end
 
 
