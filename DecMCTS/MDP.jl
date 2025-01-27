@@ -74,12 +74,14 @@ function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
     robot = model[s.id]
     r = sp.seen_cells - s.seen_cells
 
-    f(x) = 5/(1+exp(x-robot.com_range))
+    f(x) = 1/(1+exp(x-robot.com_range))
     Q=0
 
     for i in eachindex(sp.robots_states)
-        d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
-        Q += f(d)
+        if sp.robots_states[i].id != robot.id && m.use_old_info || (!m.use_old_info && sp.nb_coups <= plan.timestamp)
+            d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
+            Q += f(d)
+        end
     end
     return r+Q
 end
