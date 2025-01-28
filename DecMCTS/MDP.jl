@@ -77,10 +77,11 @@ function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
     f(x) = 1/(1+exp(x-robot.com_range))
     Q=0
 
-    for i in eachindex(sp.robots_states)
-        if sp.robots_states[i].id != robot.id && m.use_old_info || (!m.use_old_info && sp.nb_coups <= plan.timestamp)
-            d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
-            Q += f(d)
+    plans = robot.rollout_parameters.robots_plans
+    for state in sp.robots_states
+        if state.id != robot.id && m.use_old_info || (!m.use_old_info && sp.nb_coups <= plans[state.id].timestamp)
+            d = distance(sp.robots_states[robot.id].pos, state.pos)
+            Q += f(d)/length(plans)
         end
     end
     return r+Q
