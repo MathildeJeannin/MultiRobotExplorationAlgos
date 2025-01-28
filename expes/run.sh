@@ -41,8 +41,8 @@ mkdir Logs
 
 
 n=0
-ni=1
-nj=1
+ni=4
+nj=5
 start=1
 
 mkdir Resultats/Dec
