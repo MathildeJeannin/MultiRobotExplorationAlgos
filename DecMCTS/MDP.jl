@@ -68,7 +68,7 @@ function POMDPs.reward(m::RobotMDP, s::State, a::Action, sp::State)
 end
 
 
-function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
+function sigmoid_reward(m::RobotMDP, s::State, a::Action, sp::State)
     robot = model[s.id]
     r = sp.seen_cells - s.seen_cells
 
@@ -79,7 +79,7 @@ function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
     for state in sp.robots_states
         if state.id != robot.id 
             d = distance(sp.robots_states[robot.id].pos, state.pos)
-            Q += f(d)/4
+            Q += f(d)/(length(plans)-1)
         end
     end
     return r+Q
@@ -95,11 +95,10 @@ function gaussian_reward(m::RobotMDP, s::State, a::Action, sp::State)
     mu = (robot.vis_range+robot.com_range)/2
     sigma = (robot.com_range-robot.vis_range)/4
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
-    max_Q = (nb_robots-1)*f(mu) + f(0)
     Q = 0 
     for i in eachindex(length(sp.robots_states))
         d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
-        Q += f(d)
+        Q += f(d)/(f(mu)*(length(plans)-1))
     end
     return r+Q
 end
