@@ -38,7 +38,7 @@ function run(;
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
-    nb_communication = 1,
+    fr_communication = 1,
     alpha = 0.01,
     file = "",
     begin_zone = (1,1),
@@ -139,7 +139,7 @@ function run(;
 
         
         @threads for robot in robots 
-            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, nb_communication = nb_communication, fct_communication = simple_communication!)
+            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, fr_communication = fr_communication, fct_communication = simple_communication!)
         end
 
         # wait_for_key("press any key to continue")
@@ -191,7 +191,7 @@ function run(;
             fct_proba = fct_proba,
             fct_sequence = fct_sequence,
             nb_sequence = nb_sequence,
-            nb_communication = nb_communication,
+            fr_communication = fr_communication,
             alpha = alpha
             )
         end
@@ -249,7 +249,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
-    nb_communication = 1,
+    fr_communication = 1,
     alpha = 0.01
     )
     nb_robots = length(model[1].plans)

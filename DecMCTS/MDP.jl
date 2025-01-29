@@ -40,7 +40,7 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
 
         for plan in robot.rollout_parameters.robots_plans
             if plan.state.id != robot.id
-                if m.use_old_info || (!m.use_old_info && s.nb_coups < plan.timestamp)
+                if m.use_old_info || (!m.use_old_info && s.nb_coups <= plan.timestamp)
                 
                     if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (length(plan.best_sequences[1]) >= s.nb_coups - robot.rollout_parameters.debut_rollout + 1)
                         action = popfirst!(plan.best_sequences[1])

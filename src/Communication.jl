@@ -91,6 +91,7 @@ function simple_communication!(r1::RobotDec, r2::RobotDec)
     exchange_positions!(r1,r2)
     exchange_frontiers!(r1,r2)
     merge_gridmaps!(r1,r2)
+    r1.plans[r2.id].timestamp = r1.state.nb_coups
 end
 
 

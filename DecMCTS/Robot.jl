@@ -132,34 +132,53 @@ function agents_simulate!(robot, model, alpha, beta;
     nb_sequence = 3,
     fct_proba = compute_q,
     fct_sequence = state_best_average_action, 
-    nb_communication = 1,
+    fr_communication = 1,
     fct_communication = simple_communication!
     )
     extent = size(model[1].state.gridmap)
 
     if robot.state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
-
-
-        if robot.state.nb_coups - robot.last_comm <= nb_communication
+        
+        function bloc_comm()
             in_range = nearby_robots(robot, model, robot.com_range)
             for r in in_range
-                simple_communication!(robot,r)
+                println("step $(robot.state.nb_coups), robot $(robot.id) communicating with robot $(r.id)")
+                fct_communication(robot,r)
             end
             robot.last_comm = robot.state.nb_coups
         end
 
-        robot.rollout_parameters.debut_rollout = robot.state.nb_coups
-        robot.rollout_parameters.in_rollout = true
-        # try 
-            action_info(robot.planner, robot.state)
-        # catch e
-        # end
-        robot.rollout_parameters.in_rollout = false
+        function bloc_mcts()
+            robot.rollout_parameters.debut_rollout = robot.state.nb_coups
+            robot.rollout_parameters.in_rollout = true
+            try 
+                action_info(robot.planner, robot.state)
+            catch e
+            end
+            robot.rollout_parameters.in_rollout = false
 
-        robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
+            robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
 
-        update_distribution!(robot, alpha, beta)
+            update_distribution!(robot, alpha, beta)
+        end
 
+        if fr_communication >= 1
+            for i in 1:fr_communication
+                in_range = nearby_robots(robot, model, robot.com_range)
+                for r in in_range
+                    fct_communication(robot,r)
+                end
+                bloc_mcts()
+            end
+        else
+            in_range = nearby_robots(robot, model, robot.com_range)
+            for r in in_range
+                if robot.state.nb_coups - robot.plans[r.id].timestamp >= 1/fr_communication
+                    fct_communication(robot,r)
+                end
+            end
+            bloc_mcts()
+        end
     end
 end
 

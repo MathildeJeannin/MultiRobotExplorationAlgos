@@ -112,11 +112,11 @@ function initialize_model(
 end
 
 
-function agent_step!(robot, model,step,nb_communication)
+function agent_step!(robot, model,step,fr_communication)
     extent = size(robot.gridmap)
     nb_robots = abmproperties(model).nb_robots
 
-    if step - robot.last_comm <= nb_communication
+    if step - robot.last_comm <= fr_communication
         in_range = nearby_robots(robot, model, robot.com_range)
         for r in in_range
             exchange_positions!(robot, r)
