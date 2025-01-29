@@ -79,8 +79,27 @@ function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
     for state in sp.robots_states
         if state.id != robot.id 
             d = distance(sp.robots_states[robot.id].pos, state.pos)
-            Q += f(d)/length(plans)
+            Q += f(d)/4
         end
+    end
+    return r+Q
+end
+
+
+function gaussian_reward(m::RobotMDP, s::State, a::Action, sp::State)
+    robot = model[s.id]
+    nb_robots = length(s.robots_states)
+
+    r = sp.seen_cells - s.seen_cells
+
+    mu = (robot.vis_range+robot.com_range)/2
+    sigma = (robot.com_range-robot.vis_range)/4
+    f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
+    max_Q = (nb_robots-1)*f(mu) + f(0)
+    Q = 0 
+    for i in eachindex(length(sp.robots_states))
+        d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
+        Q += f(d)
     end
     return r+Q
 end
