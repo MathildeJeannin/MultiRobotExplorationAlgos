@@ -22,11 +22,12 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
         # next_seen_gridmap = deepcopy(s.seen_gridmap)
 
         if s.nb_coups - robot.rollout_parameters.debut_rollout == 0 
-            sequences, states = select_best_sequences(robot)
+            sequences, states, timestamps = select_best_sequences(robot)
             for i in eachindex(sequences)
                 if i!=robot.id
                     robot.rollout_parameters.robots_plans[i].best_sequences = sequences[i]
                     robot.rollout_parameters.robots_plans[i].state = states[i]
+                    robot.rollout_parameters.robots_plans[i].timestamp = timestamps[i]
                 end
             end
         end
@@ -40,21 +41,21 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
 
         for plan in robot.rollout_parameters.robots_plans
             if plan.state.id != robot.id
-                if m.use_old_info || (!m.use_old_info && s.nb_coups <= plan.timestamp)
-                
-                    if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (length(plan.best_sequences[1]) >= s.nb_coups - robot.rollout_parameters.debut_rollout + 1)
-                        action = popfirst!(plan.best_sequences[1])
-                        plan.timestamp += 1
-                    else
-                        action = rand(m.possible_actions)
+                if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (m.use_old_info || (!m.use_old_info && s.nb_coups - plan.timestamp < length(plan.best_sequences[1])))
+                    action = popfirst!(plan.best_sequences[1])
+                    plan.timestamp = s.nb_coups+1
+                    if robot.id == 1
+                        println(plan.best_sequences[1])
                     end
-                    
-                    next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
-
-                    next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
-
-                    next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
+                else
+                    action = rand(m.possible_actions)
                 end
+                
+                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
+
+                next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
+
+                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
             end
         end
 
@@ -79,7 +80,7 @@ function comm_reward(m::RobotMDP, s::State, a::Action, sp::State)
 
     plans = robot.rollout_parameters.robots_plans
     for state in sp.robots_states
-        if state.id != robot.id && m.use_old_info || (!m.use_old_info && sp.nb_coups <= plans[state.id].timestamp)
+        if state.id != robot.id 
             d = distance(sp.robots_states[robot.id].pos, state.pos)
             Q += f(d)/length(plans)
         end

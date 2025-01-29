@@ -138,15 +138,6 @@ function agents_simulate!(robot, model, alpha, beta;
     extent = size(model[1].state.gridmap)
 
     if robot.state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
-        
-        function bloc_comm()
-            in_range = nearby_robots(robot, model, robot.com_range)
-            for r in in_range
-                println("step $(robot.state.nb_coups), robot $(robot.id) communicating with robot $(r.id)")
-                fct_communication(robot,r)
-            end
-            robot.last_comm = robot.state.nb_coups
-        end
 
         function bloc_mcts()
             robot.rollout_parameters.debut_rollout = robot.state.nb_coups

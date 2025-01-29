@@ -182,6 +182,7 @@ function select_best_sequences(r::Robot)
     nb_robots = length(r.state.robots_states) 
     sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, nb_robots)
     states = Vector{RobotState}(undef, nb_robots)
+    timestamps = Vector{Int}(zeros(nb_robots))
     for plan in r.plans
         if plan.state.id != r.id
             if !isempty(plan.best_sequences) && !isempty(first(plan.best_sequences))
@@ -189,13 +190,15 @@ function select_best_sequences(r::Robot)
                 seq_index = rand(rng, distribution)
                 sequences[plan.state.id] = deepcopy([plan.best_sequences[seq_index]])
                 states[plan.state.id] = deepcopy(plan.state)
+                timestamps[plan.state.id] = plan.timestamp
             else
                 sequences[plan.state.id] = Vector{MutableLinkedList{Action}}(undef, 0)
                 states[plan.state.id] = deepcopy(plan.state)
+                timestamps[plan.state.id] = plan.timestamp
             end
         end
     end
-    return sequences, states
+    return sequences, states, timestamps
 end
 
 
