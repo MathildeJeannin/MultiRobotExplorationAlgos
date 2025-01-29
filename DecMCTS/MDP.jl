@@ -44,9 +44,6 @@ function POMDPs.transition(m::RobotMDP, s::State, a::Action)
                 if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (m.use_old_info || (!m.use_old_info && s.nb_coups - plan.timestamp < length(plan.best_sequences[1])))
                     action = popfirst!(plan.best_sequences[1])
                     plan.timestamp = s.nb_coups+1
-                    if robot.id == 1
-                        println(plan.best_sequences[1])
-                    end
                 else
                     action = rand(m.possible_actions)
                 end
