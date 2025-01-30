@@ -105,15 +105,15 @@ function initialize_model(;
 
         pathfinder_update!(robot.pathfinder, gridmap)
 
-        frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, gridmap, all_robots_pos, abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
-        abmproperties(model).rollout_parameters.frontiers = union(abmproperties(model).rollout_parameters.frontiers, frontiers)
+        # frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, gridmap, all_robots_pos, abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
+        # abmproperties(model).rollout_parameters.frontiers = union(abmproperties(model).rollout_parameters.frontiers, frontiers)
     end
 
     possible_actions = compute_actions_cenMCTS(nb_robots)
 
-    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, reward_function)
+    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, reward_function, true)
 
-    frontier_policy = FrontierPolicy(mdp)
+    # frontier_policy = FrontierPolicy(mdp)
 
     depth = maximum([depth,maximum(extent)*5])
 
@@ -167,8 +167,8 @@ function agent_step!(model, gridmap, planner, state, visualisation)
         gridmap_update!(next_gridmap, 0, robot.id, all_robots_pos, vis_range, obstacles_pos, model)
 
         
-        frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, next_gridmap, all_robots_pos, abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
-        abmproperties(model).rollout_parameters.frontiers = union(abmproperties(model).rollout_parameters.frontiers, frontiers)
+        # frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, next_gridmap, all_robots_pos, abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
+        # abmproperties(model).rollout_parameters.frontiers = union(abmproperties(model).rollout_parameters.frontiers, frontiers)
     
     end
 
