@@ -98,7 +98,7 @@ function gaussian_reward(m::RobotMDP, s::State, a::Action, sp::State)
     Q = 0 
     for i in eachindex(length(sp.robots_states))
         d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
-        Q += f(d)/(f(mu)*(length(plans)-1))
+        Q += f(d)/(f(mu)*(length(sp.robots_states)-1))
     end
     return r+Q
 end

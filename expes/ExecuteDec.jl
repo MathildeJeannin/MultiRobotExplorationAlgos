@@ -31,7 +31,7 @@ N = parse(Int64, ARGS[23])
 
 t0 = now()
 
-folder = "/fct_communication=$fct_communication/"
+folder = "/n_iterations=$(n_iterations)_num_map=$(num_map)_com_range=$(com_range)_fr_communication=$(fr_communication)_fct_reward=$(fct_reward)_fct_communication=$(fct_communication)_use_old_info=$(use_old_info)/"
 
 file = folder*"$(N)_$(t0).csv"
 
