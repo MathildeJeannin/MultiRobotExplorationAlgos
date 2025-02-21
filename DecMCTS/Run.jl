@@ -271,7 +271,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     end
 
     percent_of_map[end] = tmp/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
-    df = DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_all" => percent_of_map[end])
+    df = DataFrame("nb_steps" => robots[1].state.nb_coups, "percent_of_map_all" => percent_of_map[end], "positions" => [[r.pos for r in robots]])
 
     for robot in robots
 
