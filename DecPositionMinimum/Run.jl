@@ -18,7 +18,7 @@ function run(;
     vis_figure = false,
     max_steps = 500,
     num_map = 2,
-    com_range = 5,
+    com_range = 10,
     id_expe = 0,
     nb_blocs = 3,
     file = "",

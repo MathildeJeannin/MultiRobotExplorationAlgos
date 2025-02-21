@@ -73,16 +73,16 @@ function sigmoid_reward(m::RobotMDP, s::State, a::Action, sp::State)
     r = sp.seen_cells - s.seen_cells
 
     f(x) = 1/(1+exp(x-robot.com_range))
-    Q=0
+    Q=[]
 
     plans = robot.rollout_parameters.robots_plans
     for state in sp.robots_states
         if state.id != robot.id 
             d = distance(sp.robots_states[robot.id].pos, state.pos)
-            Q += f(d)/(length(plans)-1)
+            push!(Q,f(d)/(length(plans)-1))
         end
     end
-    return r+Q
+    return r+maximum(Q)
 end
 
 
@@ -95,12 +95,12 @@ function gaussian_reward(m::RobotMDP, s::State, a::Action, sp::State)
     mu = (robot.vis_range+robot.com_range)/2
     sigma = (robot.com_range-robot.vis_range)/4
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
-    Q = 0 
+    Q = []
     for i in eachindex(length(sp.robots_states))
         d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
-        Q += f(d)/(f(mu)*(length(sp.robots_states)-1))
+        push!(Q,f(d)/(f(mu)*(length(sp.robots_states)-1)))
     end
-    return r+Q
+    return r+maximum(Q)
 end
 
 

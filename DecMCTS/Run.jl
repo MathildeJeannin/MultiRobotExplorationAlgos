@@ -42,7 +42,7 @@ function run(;
     alpha = 0.01,
     file = "",
     begin_zone = (5,5),
-    fct_reward = comm_reward,
+    fct_reward = simple_reward,
     use_old_info = true,
     fct_communication = simple_communication!,
     id_expe = 0
