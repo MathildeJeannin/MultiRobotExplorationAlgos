@@ -31,7 +31,9 @@ alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep
 1,1,1,1,20,500,0,0.85,5,0,500,5,40,0.01,40,40,8,5,0.5,simple_reward,transitive_communication!,0
 1,1,1,1,20,500,0,0.85,5,0,500,5,20,0.01,40,40,8,5,0.1,simple_reward,transitive_communication!,0
 1,1,1,1,20,500,0,0.85,5,0,500,5,20,0.01,40,40,8,5,0.5,simple_reward,transitive_communication!,0
-1,1,1,1,20,500,0,0.85,5,0,500,4,10,0.01,40,40,8,5,1,sigmoid_reward,transitive_communication!,0
-1,1,1,1,20,500,0,0.85,5,0,500,4,10,0.01,40,40,8,5,1,gaussian_reward,transitive_communication!,0
-1,1,1,1,20,500,0,0.85,5,0,500,5,10,0.01,40,40,8,5,1,sigmoid_reward,transitive_communication!,0
-1,1,1,1,20,500,0,0.85,5,0,500,5,10,0.01,40,40,8,5,1,gaussian_reward,transitive_communication!,0
+1,1,1,1,20,500,0,0.85,5,0,500,-1,10,0.01,40,40,8,5,0.5,simple_reward,simple_communication!,0
+1,1,1,1,20,500,0,0.85,5,0,500,-1,10,0.01,40,40,8,5,0.5,simple_reward,transitive_communication!,1
+1,1,1,1,20,500,0,0.85,5,0,500,4,10,0.01,40,40,8,5,0.5,simple_reward,simple_communication!,0
+1,1,1,1,20,500,0,0.85,5,0,500,4,10,0.01,40,40,8,5,0.5,simple_reward,transitive_communication!,1
+1,1,1,1,20,500,0,0.85,5,0,500,5,10,0.01,40,40,8,5,0.5,simple_reward,simple_communication!,0
+1,1,1,1,20,500,0,0.85,5,0,500,5,10,0.01,40,40,8,5,0.5,simple_reward,transitive_communication!,1

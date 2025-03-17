@@ -40,61 +40,61 @@ mkdir Logs
 
 
 
-n=0
-ni=10
-nj=5
-start=1
-
-mkdir Resultats/Dec
-mkdir Logs/Dec
-
-while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 rec_column14 rec_column15 rec_column16 rec_column17 rec_column18 rec_column19 rec_column20 rec_column21 rec_column22
-do
-    for ((i=$start; i<=$ni; i++))
-    do 
-        for ((j=$start; j<=$nj; j++))
-        do  
-            julia -t 10 ExecuteDec.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $rec_column13 $rec_column14 $rec_column15 $rec_column16 $rec_column17 $rec_column18 $rec_column19 $rec_column20 $rec_column21 $rec_column22 $((n+j)) &
-        done
-        echo "Creating $nj simu, n = $n" >> log_bashDec.txt
-        wait 
-        n=$((n+nj))
-        echo "Finished $nj simu, n = $n" >> log_bashDec.txt
-    done
-done < <(tail -n +2 parametersDec.csv)
-
-wait
-echo "All done" >> log_bashDec.txt
-
-
-
-
-
 # n=0
-# ni=20
+# ni=10
 # nj=5
 # start=1
 
-# mkdir Resultats/DecPositionMinimum
-# mkdir Logs/DecPositionMinimum
+# mkdir Resultats/Dec
+# mkdir Logs/Dec
 
-# while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 
+# while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 rec_column14 rec_column15 rec_column16 rec_column17 rec_column18 rec_column19 rec_column20 rec_column21 rec_column22
 # do
 #     for ((i=$start; i<=$ni; i++))
 #     do 
 #         for ((j=$start; j<=$nj; j++))
 #         do  
-#             julia -t 10 ExecutePosMinDec.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $((n+j)) &
+#             julia -t 10 ExecuteDec.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $rec_column13 $rec_column14 $rec_column15 $rec_column16 $rec_column17 $rec_column18 $rec_column19 $rec_column20 $rec_column21 $rec_column22 $((n+j)) &
 #         done
-#         echo "Creating $nj simu, n = $n" >> log_bashPosMinDec.txt
+#         echo "Creating $nj simu, n = $n" >> log_bashDec.txt
 #         wait 
 #         n=$((n+nj))
-#         echo "Finished $nj simu, n = $n" >> log_bashPosMinDec.txt
+#         echo "Finished $nj simu, n = $n" >> log_bashDec.txt
 #     done
-# done < <(tail -n +2 parametersPosMinDec.csv)
+# done < <(tail -n +2 parametersDec.csv)
 
 # wait
-# echo "All done" >> log_bashPosMinDec.txt
+# echo "All done" >> log_bashDec.txt
+
+
+
+
+
+n=0
+ni=1
+nj=1
+start=1
+
+mkdir Resultats/DecPositionMinimum
+mkdir Logs/DecPositionMinimum
+
+while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 
+do
+    for ((i=$start; i<=$ni; i++))
+    do 
+        for ((j=$start; j<=$nj; j++))
+        do  
+            julia -t 10 ExecutePosMinDec.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $((n+j)) &
+        done
+        echo "Creating $nj simu, n = $n" >> log_bashPosMinDec.txt
+        wait 
+        n=$((n+nj))
+        echo "Finished $nj simu, n = $n" >> log_bashPosMinDec.txt
+    done
+done < <(tail -n +2 parametersPosMinDec.csv)
+
+wait
+echo "All done" >> log_bashPosMinDec.txt
 
 
 
