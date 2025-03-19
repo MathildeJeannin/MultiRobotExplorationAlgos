@@ -6,14 +6,13 @@ function initialize_model(
     extent,
     nb_obstacles, 
     num_map;
-    begin_zone = (1,1), 
-    vis_range = 3.0,
-    com_range = 2.0,
+    begin_zone = (5,5), 
+    vis_range = 3,
+    com_range = 10,
     invisible_cells = 0,
     nb_blocs = 3
 )
     gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
-    # seen_gridmap = MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent)))
 
     # initialize model
     space = GridSpace(extent, periodic = false, metric = :euclidean)
@@ -28,11 +27,14 @@ function initialize_model(
     nb_obstacles = [nb_obstacles]
     invisible_cells = [invisible_cells]
 
+    possible_actions = compute_actions_decMCTS()
+
     properties = (
         seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent))) for i in 1:nb_robots),
         nb_obstacles, 
         invisible_cells,
-        nb_robots
+        nb_robots,
+        possible_actions
     )
 
     global model = AgentBasedModel(Union{RobotPosMin{D},Obstacle{D}}, space; agent_step!,
@@ -50,13 +52,6 @@ function initialize_model(
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     end
 
-    theta = [i*pi/4 for i in 0:7]
-    rad_actions = [(round(cos(θ),digits=2),round(sin(θ), digits=2)) for θ in theta]
-    possible_actions = Vector{Action}(undef,length(rad_actions))
-    for (i,a) in enumerate(rad_actions)
-        possible_actions[i] = Action(a)
-    end
-
     pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
     for n ∈ 1:nb_robots
         pos[n] = (rand(T1),rand(T2))
@@ -70,11 +65,11 @@ function initialize_model(
         id = n
         isObstacle = false
 
-        obstacles_poses = [element.pos for element in nearby_obstacles(pos[n], model, vis_range)]
+        obstacles_pos = [element.pos for element in nearby_obstacles(pos[n], model, vis_range)]
     
         gridmap_n = copy(gridmap)
 
-        known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, pos, vis_range, obstacles_poses, model)
+        known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, pos, vis_range, obstacles_pos, model)
 
         walkmap = BitArray{2}(trues(extent))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
@@ -136,14 +131,7 @@ function agent_step!(robot, model,step,fr_communication)
         action = (robot.plan[1][1]-robot.pos[1], robot.plan[1][2]-robot.pos[2])./distance(robot.plan[1], robot.pos)
         deleteat!(robot.plan,1) 
     else
-        action = rand([(1.0, 0.0),
-            (0.71, 0.71),
-            (0.0, 1.0),
-            (-0.71, 0.71),
-            (-1.0, 0.0),
-            (-0.71, -0.71),
-            (-0.0, -1.0),
-            (0.71, -0.71)])
+        action = rand(abmproperties(model).possible_actions).direction
     end
 
     new_pos, _ = compute_new_pos(robot.gridmap, robot.id, robot.all_robots_pos, 1, action)

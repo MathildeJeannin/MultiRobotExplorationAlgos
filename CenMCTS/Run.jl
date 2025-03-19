@@ -16,49 +16,44 @@ function run(;
     alpha_action = 3.0,
     k_action = 1.0,
     exploration_constant = 20.0, 
-    n_iterations = 1000, 
+    n_iterations = 2500, 
     keep_tree = false, 
     discount = 0.85, 
     nb_obstacles = [0], 
     nb_robots = 3,
-    extent = (15,15),
+    extent = (20,20),
     vis_figure = false,
     vis_tree = false,
-    depth = 50,
+    depth = 100,
     max_time = 60.0, 
     show_progress = false,
-    max_steps = 100,
+    max_steps = 500,
     num_map = -1, 
     com_range = 10,
     penalite = false,
     id_expe = 0,
     file = "",
     nb_blocs = 0,
-    begin_zone = (1,1),
+    begin_zone = (5,5),
     reward_function = all_move_reward
     )
-
-    global use_penalite = penalite
 
     vis_range = 3
     log = []
     invisible_cells = [0]
     if num_map > 0 
-        f = open("../src/maps/map$num_map.txt", "r")
+        f = open("./src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
-        line_triche = readline(f)
+        line_invisible_cells = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = [parse(Int64, line_triche)]
-        nb_obstacles = [countlines("../src/maps/map$(num_map).txt") - 2]
+        invisible_cells = [parse(Int64, line_invisible_cells)]
+        nb_obstacles = [countlines("./src/maps/map$(num_map).txt") - 2]
     end
-
-    global all_directions = compute_actions_decMCTS()
-
     
     global model, state = initialize_model(;
-        N = nb_robots,                 # number of agents
+        nb_robots = nb_robots,                 # number of agents
         extent = extent,               # size of the world
         vis_range = vis_range,       # visibility range
         com_range = com_range,       # communication range
@@ -108,9 +103,7 @@ function run(;
     
     nb_steps = 0
     while (count(i->i!=-2, gridmap) != (extent[1]*extent[2]-invisible_cells[1])) && (nb_steps < max_steps)
-    # while (count(i->i!=-2, gridmap) != (extent[1]*extent[2])) && nb_steps < max_steps
         nb_steps += 1
-        t0 = time()
         state = agent_step!(model, gridmap, planner, state, vis_tree)
         gridmap = state.gridmap
         for (j,rob) in enumerate(robots)
@@ -144,7 +137,7 @@ function run(;
         end
     end
 
-    return nb_steps, abmproperties(model).seen_all_gridmap
+    return nb_steps
 
 end
 
@@ -175,7 +168,7 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
     euclidean_distances = zeros((length(robots), length(robots)))
     
     percent_of_map[1] = count(x->x!=-2, state.gridmap)/(extent[1]*extent[2]-invisible_cells)
-    df = DataFrame("nbsteps" => state.nb_coups, "percentofmapall" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap])
+    df = DataFrame("nbsteps" => state.step, "percentofmapall" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap])
 
     for robot in robots
 
@@ -186,12 +179,12 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
             euclidean_distances[robot_prime.id, robot.id] = euclidean_distances[robot.id, robot_prime.id]
         end
 
-        df = innerjoin(df, DataFrame("nbsteps" => state.nb_coups, "astardistances$(robot.id)" => [astar_distances[robot.id,:]], "euclideandistances$(robot.id)" =>[euclidean_distances[robot.id,:]]), on = "nbsteps")
+        df = innerjoin(df, DataFrame("nbsteps" => state.step, "astardistances$(robot.id)" => [astar_distances[robot.id,:]], "euclideandistances$(robot.id)" =>[euclidean_distances[robot.id,:]]), on = "nbsteps")
         
     end
 
     write_header = false
-    if  state.nb_coups == 1
+    if  state.step == 1
         write_header = true
     end
     CSV.write(file*"$(id_expe).csv", df, delim = ';', header = write_header, append=true)

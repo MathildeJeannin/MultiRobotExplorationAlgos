@@ -1,21 +1,18 @@
-MCTS.node_tag(s::GWPos) = "[$(s[1]),$(s[2])]"
-MCTS.node_tag(a::Symbol) = "[$a]"
-
 function initialize_model(
     nb_robots,
     extent,
     nb_obstacles, 
     num_map;
-    begin_zone = (1,1), 
-    vis_range = 3.0,
-    com_range = 2.0,
+    begin_zone = (5,5), 
+    vis_range = 3,
+    com_range = 10,
     invisible_cells = 0,
     nb_blocs = 3
 )
     
     # initialize model
     space = GridSpace(extent, periodic = false, metric = :euclidean)
-    scheduler = Schedulers.fastest  # they are executed 
+    scheduler = Schedulers.fastest
     gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
     walkmap = BitArray{2}(trues(extent))
     plan = Vector{Vector{Tuple}}(undef, nb_robots)
@@ -44,7 +41,6 @@ function initialize_model(
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
     global memory = SharedMemory(gridmap, frontiers, plan, pathfinder)
 
-    #obstacles
     if num_map == 0
         add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
     elseif num_map > 0
@@ -52,9 +48,6 @@ function initialize_model(
     else 
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     end
-
-    walkmap = BitArray{2}(trues(extent[1],extent[2]))
-    pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
     pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
     for n ∈ 1:nb_robots
@@ -66,8 +59,7 @@ function initialize_model(
 
     for n ∈ 1:nb_robots
         id = n
-
-        robot = RobotCen{D}(id, pos[n], vis_range, pathfinder, Set())
+        robot = RobotCen{D}(id, pos[n], vis_range)
         add_agent!(robot, pos[n], model) 
     end
 
@@ -121,7 +113,7 @@ function agent_step!(model)
         all_robots_pos[robot.id] = new_pos
         
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
-        gridmap_update!(memory.gridmap, 0, robot.id,all_robots_pos, robot.vis_range, obstacles_pos, model)
+        gridmap_update!(memory.gridmap, 0, robot.id, all_robots_pos, robot.vis_range, obstacles_pos, model)
         pathfinder_update!(pathfinder, memory.gridmap)
 
         if count(x->x == -2, memory.gridmap) > abmproperties(model).invisible_cells[1]

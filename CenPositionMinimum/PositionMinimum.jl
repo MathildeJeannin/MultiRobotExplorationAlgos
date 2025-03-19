@@ -102,6 +102,5 @@ function positionMinimum(all_frontiers::Vector, gridmap::MMatrix, other_robots_p
     end
 
     frontier_center = frontierCenter(min_frontier)
-    # return goToFrontier(frontier_center, pos, gridmap)
     return frontier_center
 end

@@ -3,18 +3,18 @@ MCTS.node_tag(a::Symbol) = "[$a]"
 
 
 function initialize_model(;
-    N = 3,               # number of agents
+    nb_robots = 3,               # number of agents
     extent = (20,20),    # size of the world
-    begin_zone = (3,1),   # beinning zone for robots
-    vis_range = 2.0,       # visibility range
-    com_range = 2.0,       # communication range
+    begin_zone = (5,5),   # beinning zone for robots
+    vis_range = 3.0,       # visibility range
+    com_range = 10.0,       # communication range
     nb_obstacles = 0,
     invisible_cells = [0],
     seed = 1,               # random seed
     num_map = 0,
     discount = 0.85,
-    n_iterations = 1500,
-    depth = 50,
+    n_iterations = 2500,
+    depth = 100,
     alpha_state = 1.0, 
     k_state = 500.0, 
     alpha_action = 1.0,
@@ -23,17 +23,15 @@ function initialize_model(;
     keep_tree = false,
     max_time = 60.0,
     show_progress = false,
-    max_steps = 100,
+    max_steps = 500,
     nb_blocs = 0,
     reward_function = all_move_reward
 )
 
-    nb_robots = N
     # initialize model
     space = GridSpace(extent, periodic = false, metric = :euclidean)
-    rng = Random.MersenneTwister(seed)  # reproducibility
-    scheduler = Schedulers.fastest  # they are executed semi-synchronously,
-                # in order of their indexing
+    rng = Random.MersenneTwister(seed)
+    scheduler = Schedulers.fastest
 
     D = length(extent)
 
@@ -45,7 +43,8 @@ function initialize_model(;
 
     frontiers = Set()
     actions_sequence = Vector{ActionCen}(undef, 0)
-    rollout_parameters = RolloutInfo(false, 1, frontiers, [(0,0) for i in 1:nb_robots], MVector{0,Nothing}())
+    #TODO enlever frontieres de rollout info
+    rollout_parameters = RolloutInfo(1, MVector{0,Nothing}())
 
     properties = (
         seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent))) for i in 1:nb_robots),
@@ -55,8 +54,6 @@ function initialize_model(;
         rollout_parameters
     )
 
-
-    # TODO change to UnremovableABM
     global model = AgentBasedModel(Union{Robot, Obstacle}, space; agent_step!,
         rng = rng,
         scheduler = scheduler,
@@ -71,49 +68,30 @@ function initialize_model(;
         add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
     end
 
-    walkmap = BitArray{2}(trues(extent[1],extent[2]))
-    pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
+    robots_states = Vector{RobotState}(undef, nb_robots)
 
     pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
-    for n ∈ 1:N
+    for n in 1:nb_robots
         pos[n] = (rand(T1),rand(T2))
         while !isempty(ids_in_position(pos[n], model))
             pos[n] = (rand(T1),rand(T2))
         end
+        robot = RobotCen{D}(n, pos[n], vis_range)
+        add_agent!(robot, pos[n], model)
+        robots_states[n] = RobotState(robot.id, robot.pos)
     end
 
-    for n in 1:N
-        id = n
-        agent = RobotCen{D}(id, pos[n], vis_range, pathfinder, Set())
-        add_agent!(agent, pos[n], model)
-    end
-
-    robots_states = Vector{RobotState}(undef, nb_robots)
     robots = [model[i] for i in 1:nb_robots]
-
-    for (i,r) in enumerate(robots)
-        id = r.id
-        robots_states[id] = RobotState(r.id, r.pos)
-    end
-
     all_robots_pos = [r.pos for r in robots]
     for robot in robots
         obstacles = nearby_obstacles(robot, model, robot.vis_range)
         obstacles_pos = [element.pos for element in obstacles]
-
         gridmap_update!(gridmap, 0, robot.id, all_robots_pos, robot.vis_range, obstacles_pos, model)
-
-        pathfinder_update!(robot.pathfinder, gridmap)
-
-        # frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, gridmap, all_robots_pos, abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
-        # abmproperties(model).rollout_parameters.frontiers = union(abmproperties(model).rollout_parameters.frontiers, frontiers)
     end
 
     possible_actions = compute_actions_cenMCTS(nb_robots)
 
     mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, reward_function, true)
-
-    # frontier_policy = FrontierPolicy(mdp)
 
     depth = maximum([depth,maximum(extent)*5])
 
@@ -134,7 +112,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
     robots = [model[i] for i in 1:nb_robots]
 
     vis_range = robots[1].vis_range
-    abmproperties(model).rollout_parameters.debut_rollout = state.nb_coups
+    abmproperties(model).rollout_parameters.timestamp_rollout = state.step
 
     global a,info = action_info(planner, state)
 
@@ -144,7 +122,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
 
     next_robots_states = Vector{RobotState}(undef, nb_robots)
     next_gridmap = deepcopy(gridmap)
-    nb_coups = state.nb_coups + 1
+    step = state.step + 1
 
     for robot in robots
         next_robots_states[robot.id] = deepcopy(RobotState(robot.id, robot.pos))
@@ -154,7 +132,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
 
     for robot in robots
         id = robot.id
-        action = a.directions[id].direction
+        action = a.directions_vector[id].direction
         pos = robot.pos
         
         next_pos,_ = compute_new_pos(next_gridmap, id, all_robots_pos, 1,  action)
@@ -162,19 +140,11 @@ function agent_step!(model, gridmap, planner, state, visualisation)
         next_robots_states[id] = RobotState(id, next_pos)
         all_robots_pos[id] = next_pos
 
-        obstacles = nearby_obstacles(robot, model, robot.vis_range)
+        obstacles = nearby_obstacles(robot, model, vis_range)
         obstacles_pos = [element.pos for element in obstacles]
         gridmap_update!(next_gridmap, 0, robot.id, all_robots_pos, vis_range, obstacles_pos, model)
-
-        
-        # frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, next_gridmap, all_robots_pos, abmproperties(model).rollout_parameters.frontiers; need_repartition=false)
-        # abmproperties(model).rollout_parameters.frontiers = union(abmproperties(model).rollout_parameters.frontiers, frontiers)
     
     end
 
-    for robot in robots
-        pathfinder_update!(robot.pathfinder, next_gridmap)
-    end
-
-    return StateCen(next_gridmap, next_robots_states, [0,0,0], nb_coups)
+    return StateCen(next_gridmap, next_robots_states, [0,0,0], step)
 end

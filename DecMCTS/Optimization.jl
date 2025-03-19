@@ -63,10 +63,10 @@ function select_sequences(r::Robot, N::Int64, roll::Bool, compute_proba::Functio
         compteur += 1 
     end
 
-    actions_sequences = Vector{MutableLinkedList{Action}}(undef, length(index_actions_sequences))
+    actions_sequences = Vector{MutableLinkedList{ActionDec}}(undef, length(index_actions_sequences))
     for (k,index_sequence) in enumerate(index_actions_sequences)
         # actions_sequences[k] = [r.planner.tree.a_labels[index] for index in index_sequence]
-        actions_sequences[k] = MutableLinkedList{Action}()
+        actions_sequences[k] = MutableLinkedList{ActionDec}()
         for index in index_sequence
             append!(actions_sequences[k], r.planner.tree.a_labels[index])
         end
@@ -180,7 +180,7 @@ end
 function select_best_sequences(r::Robot)
     rng = MersenneTwister(rand(1:1000000))
     nb_robots = length(r.state.robots_states) 
-    sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, nb_robots)
+    sequences = Vector{Vector{MutableLinkedList{ActionDec}}}(undef, nb_robots)
     states = Vector{RobotState}(undef, nb_robots)
     timestamps = Vector{Int}(zeros(nb_robots))
     for plan in r.plans
@@ -192,7 +192,7 @@ function select_best_sequences(r::Robot)
                 states[plan.state.id] = deepcopy(plan.state)
                 timestamps[plan.state.id] = plan.timestamp
             else
-                sequences[plan.state.id] = Vector{MutableLinkedList{Action}}(undef, 0)
+                sequences[plan.state.id] = Vector{MutableLinkedList{ActionDec}}(undef, 0)
                 states[plan.state.id] = deepcopy(plan.state)
                 timestamps[plan.state.id] = plan.timestamp
             end
@@ -208,7 +208,7 @@ function esperance_fr(r::Robot)
     nb_robots = length(r.state.robots_states)
     
     s = deepcopy(r.state)
-    sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, length(r.plans))
+    sequences = Vector{Vector{MutableLinkedList{ActionDec}}}(undef, length(r.plans))
     proba = Vector{Vector{Float64}}(undef, length(r.plans))
     robots_plans = deepcopy(r.rollout_parameters.robots_plans)
 
@@ -233,10 +233,10 @@ function esperance_fr(r::Robot)
 end
 
 
-function esperance_fr_xr(r::Robot, xr::MutableLinkedList{Action}, qr::Float64)
+function esperance_fr_xr(r::Robot, xr::MutableLinkedList{ActionDec}, qr::Float64)
     esp = 0
     s = deepcopy(r.state)
-    sequences = Vector{Vector{MutableLinkedList{Action}}}(undef, length(r.plans))
+    sequences = Vector{Vector{MutableLinkedList{ActionDec}}}(undef, length(r.plans))
     proba = Vector{Vector{Float64}}(undef, length(r.plans))
     robots_plans = deepcopy(r.rollout_parameters.robots_plans)
 
@@ -273,7 +273,7 @@ function shannon_entropy(q_nr::Vector{Float64})
 end
 
 
-function simulate_reward(s::State, robots_plans::MVector, planner::DPWPlanner, discount::Float64, compteur::Int64)
+function simulate_reward(s::StateDec, robots_plans::MVector, planner::DPWPlanner, discount::Float64, compteur::Int64)
     id = s.id
     if length(robots_plans[id].best_sequences[1]) >= compteur
         action = getindex(robots_plans[id].best_sequences[1], compteur)

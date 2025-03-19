@@ -4,17 +4,17 @@
 end
 
 
-@struct_hash_equal mutable struct State 
+@struct_hash_equal mutable struct StateDec #changé avant : State
     id::Int
     robots_states::MVector
     gridmap::MMatrix
     known_cells::Int64
     seen_cells::Int64
-    nb_coups::Int
+    step::Int #changé avant : nb_coups
 end
 
 
-@struct_hash_equal struct Action
+@struct_hash_equal struct ActionDec #changé avant : Action
     direction::Tuple{Float64,Float64}
 end
 
@@ -23,20 +23,20 @@ end
     gridmap::MMatrix
     robots_states::Vector{RobotState}
     seen::Vector
-    nb_coups::Int
+    step::Int #changé avant : nb_coups
 end
 
 
-@struct_hash_equal struct ActionCen
-    directions::Vector{Action}
+@struct_hash_equal struct ActionCen 
+    directions_vector::Vector{ActionDec} #changé avant : directions
 end
 
 
-struct RobotMDP <: MDP{Union{State,StateCen}, Union{Action,ActionCen}}
+struct RobotMDP <: MDP{Union{StateDec,StateCen}, Union{ActionDec,ActionCen}}
     vis_range::Int64
     nb_obstacle::Int64
     discount::Float64
-    possible_actions::Union{Vector{Action}, Vector{ActionCen}}
+    possible_actions::Union{Vector{ActionDec}, Vector{ActionCen}}
     reward_function::Function
     use_old_info::Bool
 end
@@ -44,17 +44,14 @@ end
 
 @struct_hash_equal mutable struct RobotPlan 
     state::RobotState
-    best_sequences::Vector{MutableLinkedList{Action}}
+    best_sequences::Vector{MutableLinkedList{ActionDec}}
     assigned_proba::Vector{Float64}
     timestamp::Int
 end
 
 
 mutable struct RolloutInfo
-    in_rollout::Bool
-    debut_rollout::Int64
-    frontiers::Set
-    goal::Union{Tuple,Vector{Tuple{Int,Int}}}
+    timestamp_rollout::Int64 #changé : avant = debut_rollout
     robots_plans::MVector
 end
 
@@ -69,8 +66,6 @@ mutable struct RobotCen{D} <: AbstractAgent
     id::Int
     pos::NTuple{D,Int}
     vis_range::Int
-    pathfinder::Any
-    frontiers::Set
 end
 
 
@@ -81,10 +76,8 @@ mutable struct RobotDec{D} <: AbstractAgent
     com_range::Int
     plans::Vector{RobotPlan}
     rollout_parameters::RolloutInfo
-    state::State
+    state::StateDec
     planner::DPWPlanner
-    pathfinder::Any
-    frontiers::Set
     last_comm::Int64
 end
 

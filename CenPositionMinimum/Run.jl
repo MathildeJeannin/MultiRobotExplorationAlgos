@@ -12,30 +12,31 @@ include("PositionMinimum.jl")
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(;
-    nb_obstacles = 0, 
+    nb_obstacles = [0], 
     nb_robots = 3,
-    extent = (15,15),
+    extent = (20,20),
     vis_figure = false,
-    max_steps = 100,
+    show_progress = false,
+    max_steps = 500,
     num_map = 2,
-    com_range = 5,
+    com_range = 10,
     id_expe = 0,
     nb_blocs = 3,
     file = "",
-    begin_zone = (1,1)
+    begin_zone = (5,5)
     )
 
     vis_range = 3
     invisible_cells = 0
     if num_map > 0 
-        f = open("../src/maps/map$num_map.txt", "r")
+        f = open("./src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
-        line_triche = readline(f)
+        line_invisible_cells = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = parse(Int64, line_triche)
-        nb_obstacles = countlines("../src/maps/map$(num_map).txt") - 2
+        invisible_cells = parse(Int64, line_invisible_cells)
+        nb_obstacles = countlines("./src/maps/map$(num_map).txt") - 2
     end
 
     global model = initialize_model(
@@ -58,12 +59,10 @@ function run(;
         observ_traj_list = [Observable([Point2f(0.5,0.5)]) for i in 1:nb_robots]
         for (i,r) in enumerate(robots)
             id = r.id
-            # observ_pos_list[id] = Vector{Observable}(undef, nb_robots)
             push!(observ_traj_list[id][], Point2f(r.pos))
             observ_pos_list[id] = Observable(r.pos)
         end
         global f = initialise_figure(observ_map, observ_pos_list, observ_traj_list)
-    
     end
     
     nb_steps = 0
@@ -75,13 +74,14 @@ function run(;
         walkmap[p[1],p[2]] = false
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
-    # plan_route!(agent, pos, pathfinder)
 
     while (max_knowledge != (extent[1]*extent[2]-abmproperties(model).invisible_cells[1])) && (nb_steps < max_steps)
         nb_steps += 1
-
-
         agent_step!(model)
+
+        if show_progress
+            println("Step $nb_steps")
+        end
 
         robots = [model[i] for i in 1:nb_robots]
         all_robots_pos = [r.pos for r in robots]
@@ -93,11 +93,9 @@ function run(;
                 observ_traj_list[id][] = push!(observ_traj_list[id][], Point2f(r.pos))
                 observ_map[] = Matrix(memory.gridmap)
             end
+            sleep(0.5)
         end
 
-        sleep(0.5)
-
-            
         max_knowledge = count(x -> x != -2, memory.gridmap)
 
         if id_expe!=0 && file != ""
@@ -112,7 +110,7 @@ function run(;
         end
 
     end        
-    return nb_steps, abmproperties(model).seen_all_gridmap
+    return nb_steps
 end
 
 

@@ -69,7 +69,7 @@ function transitive_communication!(r1::RobotDec, r2::RobotDec)
     r1.state.robots_states[r2.id] = deepcopy(r1.plans[r2.id].state)
     r1.plans[r2.id].best_sequences, r1.plans[r2.id].assigned_proba = r2.plans[r2.id].best_sequences, r2.plans[r2.id].assigned_proba
 
-    r1.plans[r2.id].timestamp = r1.state.nb_coups
+    r1.plans[r2.id].timestamp = r1.state.step
 
     for p in r2.plans
         if p.state.id != r2.id && p.timestamp > r1.plans[p.state.id].timestamp
@@ -80,8 +80,6 @@ function transitive_communication!(r1::RobotDec, r2::RobotDec)
             r1.state.robots_states[p.state.id] = deepcopy(r1.plans[p.state.id].state)
         end
     end
-
-    exchange_frontiers!(r1,r2)
     merge_gridmaps!(r1,r2)
 end
 
@@ -89,9 +87,8 @@ end
 function simple_communication!(r1::RobotDec, r2::RobotDec)
     exchange_best_sequences!(r1,r2)
     exchange_positions!(r1,r2)
-    exchange_frontiers!(r1,r2)
     merge_gridmaps!(r1,r2)
-    r1.plans[r2.id].timestamp = r1.state.nb_coups
+    r1.plans[r2.id].timestamp = r1.state.step
 end
 
 
@@ -108,8 +105,4 @@ function exchange_frontiers!(r1::RobotPosMin, r2::RobotPosMin)
     for f in r2.frontiers
         push!(r1.frontiers, f)
     end
-end
-
-function exchange_frontiers!(r1::RobotDec, r2::RobotDec)
-    r1.frontiers = r1.rollout_parameters.frontiers = union(r1.frontiers, r2.frontiers)
 end

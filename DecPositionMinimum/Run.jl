@@ -8,34 +8,35 @@ include("../src/Sensor.jl")
 include("../src/Communication.jl")
 include("../src/FrontierDetection.jl")
 include("PositionMinimum.jl")
+include("../src/Utils.jl")
 
-wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(;
     nb_obstacles = 0, 
     nb_robots = 5,
-    extent = (15,15),
+    extent = (20,20),
     vis_figure = false,
+    show_progress = false,
     max_steps = 500,
     num_map = 2,
     com_range = 10,
     id_expe = 0,
     nb_blocs = 3,
     file = "",
-    begin_zone = (1,1)
+    begin_zone = (5,5)
     )
 
     vis_range = 3
     invisible_cells = 0
     if num_map > 0 
-        f = open("../src/maps/map$num_map.txt", "r")
+        f = open("./src/maps/map$num_map.txt", "r")
         line_extent = readline(f)
-        line_triche = readline(f)
+        line_invisible_cells = readline(f)
         close(f)
         str_extent = split(line_extent, ";")
         extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = parse(Int64, line_triche)
-        nb_obstacles = countlines("/home/mathilde/Documents/These/Codes/SimulateursExploration/src/maps/map$(num_map).txt") - 2
+        invisible_cells = parse(Int64, line_invisible_cells)
+        nb_obstacles = countlines("./src/maps/map$(num_map).txt") - 2
     end
 
     global model = initialize_model(
@@ -79,13 +80,10 @@ function run(;
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap) # pathfinder pour calculer les distances entre les robots dans les metriques
     
-    # plan_route!(agent, pos, pathfinder)
-
     while (max_knowledge != (extent[1]*extent[2]-abmproperties(model).invisible_cells[1])) && (nb_steps < max_steps)
         nb_steps += 1
 
         for robot in robots
-
             agent_step!(robot, model,nb_steps,1)
 
             if vis_figure
@@ -94,11 +92,13 @@ function run(;
                 end              
                 observ_traj_list[robot.id][] = push!(observ_traj_list[robot.id][], Point2f(robot.pos))
                 observ_map[robot.id][] = robot.gridmap
+                sleep(0.5) 
             end
 
-            sleep(0.5)
+        end
 
-            
+        if show_progress
+            println("Step $nb_steps")
         end
         max_knowledge = maximum([count(x -> x != -2, r.gridmap) for r in robots])
 
@@ -114,7 +114,7 @@ function run(;
         end
 
     end        
-    return nb_steps, abmproperties(model).seen_all_gridmap
+    return nb_steps
 end
 
 
