@@ -1,5 +1,7 @@
 # Multi robot exploration contro algorithms
 
+Version the repository corresponding to the article submitted at CASE2025. 
+
 ## Description of the algorithms
 
 This package implements four control algorithms for robotic explorations of unknown environment. It is based on the package [Agents.jl](https://juliadynamics.github.io/Agents.jl/stable/), [POMDPs.jl](https://juliapomdp.github.io/POMDPs.jl/stable/) and [MCTS.jl](https://juliapomdp.github.io/MCTS.jl/stable/). 
