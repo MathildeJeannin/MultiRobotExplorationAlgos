@@ -4,17 +4,17 @@
 end
 
 
-@struct_hash_equal mutable struct StateDec #changé avant : State
+@struct_hash_equal mutable struct StateDec 
     id::Int
     robots_states::MVector
     gridmap::MMatrix
     known_cells::Int64
     seen_cells::Int64
-    step::Int #changé avant : nb_coups
+    step::Int 
 end
 
 
-@struct_hash_equal struct ActionDec #changé avant : Action
+@struct_hash_equal struct ActionDec 
     direction::Tuple{Float64,Float64}
 end
 
@@ -23,12 +23,12 @@ end
     gridmap::MMatrix
     robots_states::Vector{RobotState}
     seen::Vector
-    step::Int #changé avant : nb_coups
+    step::Int 
 end
 
 
 @struct_hash_equal struct ActionCen 
-    directions_vector::Vector{ActionDec} #changé avant : directions
+    directions_vector::Vector{ActionDec} 
 end
 
 
@@ -51,7 +51,7 @@ end
 
 
 mutable struct RolloutInfo
-    timestamp_rollout::Int64 #changé : avant = debut_rollout
+    timestamp_rollout::Int64 
     robots_plans::MVector
 end
 
