@@ -6,20 +6,20 @@ This package implements four control algorithms for robotic explorations of unkn
 
 The environment is represented by a discrete gridmap. The four algorithms are : 
 
-1. CenPositionMinimum: a centralised frontier method
+1. *CenPositionMinimum*: a centralised frontier method
 
 In this method, all robots share the gridmap, a frontier set and a A* pathfinding. The frontiers are allocated using [Bautin et al.](https://link.springer.com/chapter/10.1007/978-3-642-33515-0_49) strategy. 
 
 
-2. DecPositionMinimum: a decentralised frontier method
+2. *DecPositionMinimum*: a decentralised frontier method
 
 This method is similar as the previous one, but each robot keeps its own gridmap and frontier set. Each robot takes an action using the last information it got from other robots.
 
-3. CenMCTS: a centralised method using a shared MCTS
+3. *CenMCTS*: a centralised method using a shared MCTS
 
 This method uses a Monte Carlo Tree Search (MCTS) shared by all robots along the gridmap. The Search Tree decides the actions of the robots.
 
-4. DecMCTS: a decentralised method using one MCTS per robot
+4. *DecMCTS*: a decentralised method using one MCTS per robot
 
 This method is a decentralised version of the previous one. It is based on [Best et al.'s work](https://journals.sagepub.com/doi/abs/10.1177/0278364918755924]).
 
