@@ -4,18 +4,19 @@
 end
 
 
-@struct_hash_equal mutable struct StateDec #changé avant : State
+@struct_hash_equal mutable struct StateDec 
     id::Int
     robots_states::MVector
     gridmap::MMatrix
     known_cells::Int64
     seen_cells::Int64
-    step::Int #changé avant : nb_coups
+    frontiers::Set
+    step::Int 
 end
 
 
-@struct_hash_equal struct ActionDec #changé avant : Action
-    direction::Tuple{Float64,Float64}
+@struct_hash_equal struct ActionDec 
+    goal::Union{Tuple{Float64,Float64}, Tuple{Int64,Int64}} #changer nom
 end
 
 
@@ -23,12 +24,21 @@ end
     gridmap::MMatrix
     robots_states::Vector{RobotState}
     seen::Vector
-    step::Int #changé avant : nb_coups
+    step::Int 
 end
 
 
 @struct_hash_equal struct ActionCen 
-    directions_vector::Vector{ActionDec} #changé avant : directions
+    directions_vector::Vector{ActionDec}
+end
+
+
+
+mutable struct RolloutInfo
+    timestamp_rollout::Int64 
+    robots_plans::MVector
+    pathfinder::Any
+    route::Any
 end
 
 
@@ -42,6 +52,12 @@ struct RobotMDP <: MDP{Union{StateDec,StateCen}, Union{ActionDec,ActionCen}}
 end
 
 
+# mutable struct Ghost{D} <: AbstractAgent
+#     id::Int
+#     pos::NTuple{D,Int}
+# end
+
+
 @struct_hash_equal mutable struct RobotPlan 
     state::RobotState
     best_sequences::Vector{MutableLinkedList{ActionDec}}
@@ -50,9 +66,29 @@ end
 end
 
 
-mutable struct RolloutInfo
-    timestamp_rollout::Int64 #changé : avant = debut_rollout
-    robots_plans::MVector
+mutable struct Buffer
+    best_sequences::Vector{MutableLinkedList{ActionDec}}
+    assigned_proba::Vector{Float64}
+    position::Tuple
+    gridmap::MMatrix
+    frontiers::Set
+    empty::Bool
+end
+
+
+mutable struct RobotDec{D} <: AbstractAgent
+    id::Int
+    pos::NTuple{D,Int}
+    vis_range::Int
+    com_range::Int
+    plans::Vector{RobotPlan}
+    rollout_parameters::RolloutInfo
+    state::StateDec
+    pathfinder::Any #ajout 
+    # ghost::Ghost
+    planner::DPWPlanner
+    last_comm::Int64
+    buffers::Vector{Buffer}
 end
 
 
@@ -69,19 +105,6 @@ mutable struct RobotCen{D} <: AbstractAgent
 end
 
 
-mutable struct RobotDec{D} <: AbstractAgent
-    id::Int
-    pos::NTuple{D,Int}
-    vis_range::Int
-    com_range::Int
-    plans::Vector{RobotPlan}
-    rollout_parameters::RolloutInfo
-    state::StateDec
-    planner::DPWPlanner
-    last_comm::Int64
-end
-
-
 mutable struct RobotPosMin{D} <: AbstractAgent
     id::Int
     pos::NTuple{D,Int}
@@ -94,6 +117,7 @@ mutable struct RobotPosMin{D} <: AbstractAgent
     frontiers::Set
     last_comm::Int64
 end
+
 
 mutable struct SharedMemory
     gridmap::MMatrix

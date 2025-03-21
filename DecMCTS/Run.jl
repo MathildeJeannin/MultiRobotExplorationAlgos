@@ -130,7 +130,8 @@ function run(;
         nb_steps += 1
 
         
-        @threads for robot in robots 
+        # @threads for robot in robots 
+        for robot in robots
             agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, fr_communication = fr_communication, fct_communication = simple_communication!)
         end
 
@@ -194,18 +195,6 @@ function describe_robot(robot::Robot)
     _print_gridmap(robot.state.space_state.gridmap, [p.state for p in robot.state.space_state.robots_plans])
 end
 
-
-
-function list_pos(gridmap::MMatrix, id::Int, robots_pos::Union{Vector, SizedVector}, vis_range::Int, action_sequence::MutableLinkedList{ActionDec})
-    L = Vector{Tuple{Int,Int}}(undef, length(action_sequence)+1)
-    L[1] = robots_pos[id]
-    for (i,a) in enumerate(action_sequence)
-        pos,_ = compute_new_pos(gridmap, id, robots_pos, vis_range, a.direction)
-        robots_pos[id] = pos
-        L[i+1] = pos
-    end
-    return L
-end
 
 
 function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file::String, id_expe::Int;

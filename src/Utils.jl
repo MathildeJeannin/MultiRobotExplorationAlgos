@@ -37,3 +37,22 @@ function compute_actions_decMCTS()
 
     return possible_actions
 end
+
+
+
+function astar_neighbours(state) # state = id + robots_pos + gridmap
+    ok_neighbours = []
+    id, robots_pos, gridmap = state
+    pos = robots_pos[id]
+    extent = size(gridmap)
+    for (dx,dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), 
+        (-1, -1), (-1, 1), (1, -1), (1, 1)]
+        next_pos = pos .+ (dx,dy) 
+        if next_pos[1] > 0 && next_pos[1] <= extent[1] && next_pos[2] > 0 && next_pos[2] <= extent[2] && (gridmap[next_pos[1],next_pos[2]] != -1 || !(pos in robots_pos))
+            next_robots_pos = deepcopy(robots_pos)
+            next_robots_pos[id] = next_pos
+            push!(ok_neighbours, (id, next_robots_pos, gridmap))
+        end
+    end
+    return ok_neighbours
+end
