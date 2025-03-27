@@ -104,12 +104,18 @@ end
 
 
 function simple_communication!(r1::RobotDec, r2::RobotDec)
-    best_sequences_to_buffer(r1,r2)
-    position_to_buffer(r1,r2)
-    gridmap_to_buffer(r1,r2)
-    frontiers_to_buffer(r1,r2)
+    # best_sequences_to_buffer(r1,r2)
+    # position_to_buffer(r1,r2)
+    # gridmap_to_buffer(r1,r2)
+    # frontiers_to_buffer(r1,r2)
+    r1.plans[r2.id].best_sequences, r1.plans[r2.id].assigned_proba = r2.plans[r2.id].best_sequences, r2.plans[r2.id].assigned_proba
+    r1.plans[r2.id].state = RobotState(r2.id, r2.pos)
+    r1.rollout_parameters.robots_plans[r2.id].state = RobotState(r2.id, r2.pos)
+    r1.state.robots_states[r2.id] = RobotState(r2.id, r2.pos)
+    merge_gridmap!(r1, r2.state.gridmap)
+    r1.frontiers[r2.id] = r2.frontiers[r2.id]
     r1.plans[r2.id].timestamp = r1.state.step
-    r1.buffers[r2.id].empty = false
+    # r1.buffers[r2.id].empty = false
 end
 
 
@@ -132,11 +138,17 @@ function empty_buffers!(r1::RobotDec)
 end
 
 function new_buffer()
-    best_sequences = []
-    assigned_proba = []
-    position = (0,0)
-    gridmap = MMatrix{1,1}((0,0))
-    frontiers = Set()
+    # best_sequences = []
+    # assigned_proba = []
+    # position = (0,0)
+    # gridmap = MMatrix{1,1}((0,0))
+    # frontiers = Set()
+    # empty = true
+    best_sequences = nothing
+    assigned_proba = nothing
+    position = nothing
+    gridmap = nothing
+    frontiers = nothing
     empty = true
     return Buffer(best_sequences, assigned_proba, position, gridmap, frontiers, empty)
 end

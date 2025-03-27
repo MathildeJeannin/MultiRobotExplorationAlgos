@@ -130,8 +130,8 @@ function run(;
         nb_steps += 1
 
         
-        @threads for robot in robots 
-        # for robot in robots
+        # @threads for robot in robots 
+        for robot in robots
             agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, fr_communication = fr_communication, fct_communication = simple_communication!)
         end
 

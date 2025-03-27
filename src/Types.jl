@@ -67,12 +67,18 @@ end
 
 
 mutable struct Buffer
-    best_sequences::Vector{MutableLinkedList{ActionDec}}
-    assigned_proba::Vector{Float64}
-    position::Tuple
-    gridmap::MMatrix
-    frontiers::Set
-    empty::Bool
+    # best_sequences::Vector{MutableLinkedList{ActionDec}}
+    # assigned_proba::Vector{Float64}
+    # position::Tuple
+    # gridmap::MMatrix
+    # frontiers::Set
+    # empty::Bool
+    best_sequences
+    assigned_proba
+    position
+    gridmap
+    frontiers
+    empty
 end
 
 
@@ -85,7 +91,7 @@ mutable struct RobotDec{D} <: AbstractAgent
     rollout_parameters::RolloutInfo
     state::StateDec
     pathfinder::Any #ajout 
-    frontiers::Set
+    frontiers::Vector{Set}
     planner::DPWPlanner
     last_comm::Int64
     buffers::Vector{Buffer}
