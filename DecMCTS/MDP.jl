@@ -1,5 +1,4 @@
-POMDPs.actions(m::RobotMDP, s::StateDec) = isempty(s.frontiers) ? m.possible_actions : frontiers_to_actions(s.frontiers)
-
+POMDPs.actions(m::RobotMDP, s::StateDec) = m.possible_actions
 POMDPs.stateindex(m::RobotMDP, s::StateDec) = m.indices[s]
 POMDPs.actionindex(m::RobotMDP, a::ActionDec) = m.indices[a]
 
@@ -28,44 +27,48 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
             end
         end
 
-        # next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, (nothing), goal=a.goal)
+        next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, a.direction)
 
         # robot.rollout_parameters.route = plan_route!(s.robots_states[s.id].pos, a.goal, robot.rollout_parameters.pathfinder)
-        start = (s.id, [sr.pos for sr in s.robots_states], next_gridmap)
-        goal = (s.id, [sr.pos for sr in s.robots_states], next_gridmap)
-        goal[2][s.id] = a.goal
-        astar_results = astar(astar_neighbours, start, goal)
-        robot.rollout_parameters.route = astar_results.path
+        # start = (s.id, [sr.pos for sr in s.robots_states], next_gridmap)
+        # goal = (s.id, [sr.pos for sr in s.robots_states], next_gridmap)
+        # goal[2][s.id] = a.goal
+        # astar_results = astar(astar_neighbours, start, goal)
+        # robot.rollout_parameters.route = astar_results.path
 
-        next_pos = robot.rollout_parameters.route[end][2][s.id]
+        # next_pos = robot.rollout_parameters.route[end][2][s.id]
         # next_pos = a.goal
 
         next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
-        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [(0,0)], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
 
         for plan in robot.rollout_parameters.robots_plans
             if plan.state.id != robot.id
                 if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (m.use_old_info || (!m.use_old_info && s.step - plan.timestamp < length(plan.best_sequences[1])))
-                    next_robot_pos.goal = popfirst!(plan.best_sequences[1])
+                    action = popfirst!(plan.best_sequences[1])
                     plan.timestamp = s.step+1
                 else
-                    next_robot_pos, _ = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, rand(m.possible_actions).goal, goal=nothing)
+                    action = rand(m.possible_actions)
                 end
+
+                next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
 
                 next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
 
-                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [(0,0)], model, transition = true, distribution = distribution)
+                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
             end
         end
 
-        next_frontiers = deepcopy(s.frontiers)
+        
+
+        # next_frontiers = deepcopy(s.frontiers)
         # frontierDetectionMCTS!(next_gridmap, next_frontiers, need_repartition = false)
-        next_frontiers = frontierDetection(s.id, next_robots_states[s.id].pos, robot.vis_range, next_gridmap, [sr.pos for sr in next_robots_states], next_frontiers; need_repartition=false)
+        # next_frontiers = frontierDetection(s.id, next_robots_states[s.id].pos, robot.vis_range, next_gridmap, [sr.pos for sr in next_robots_states], next_frontiers; need_repartition=false)
 
 
-        sp = StateDec(robot.id, next_robots_states, next_gridmap, next_known_cells, next_seen_cells, next_frontiers, s.step+1)
+        sp = StateDec(robot.id, next_robots_states, next_gridmap, next_known_cells, next_seen_cells, s.step+1)
         return sp
     end
 end
@@ -114,13 +117,13 @@ end
 
 function simple_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
     r = sp.seen_cells - s.seen_cells
-    N_route = length(model[s.id].rollout_parameters.route)    
-    if N_route == 0 
-        r_prime = 0
-    else
-        r_prime = 1/N_route
-    end
-    return r + r_prime
+    # N_route = length(model[s.id].rollout_parameters.route)    
+    # if N_route == 0 
+    #     r_prime = 0
+    # else
+    #     r_prime = 1/N_route
+    # end
+    # return r 
     # return r
 end
 
@@ -131,10 +134,10 @@ function POMDPs.isterminal(m::RobotMDP, s::StateDec)
 end
 
 
-function frontiers_to_actions(frontiers::Set)
-    actions = []
-    for cell in frontiers
-        push!(actions, ActionDec(cell))
-    end
-    return actions
-end
+# function frontiers_to_actions(frontiers::Set)
+#     actions = []
+#     for cell in frontiers
+#         push!(actions, ActionDec(cell))
+#     end
+#     return actions
+# end

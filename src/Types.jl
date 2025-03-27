@@ -10,13 +10,12 @@ end
     gridmap::MMatrix
     known_cells::Int64
     seen_cells::Int64
-    frontiers::Set
     step::Int 
 end
 
 
 @struct_hash_equal struct ActionDec 
-    goal::Union{Tuple{Float64,Float64}, Tuple{Int64,Int64}} #changer nom
+    direction::Union{Tuple{Float64,Float64}, Tuple{Int64,Int64}} #changer nom
 end
 
 
@@ -38,6 +37,7 @@ mutable struct RolloutInfo
     timestamp_rollout::Int64 
     robots_plans::MVector
     pathfinder::Any
+    frontiers::Set
     route::Any
 end
 
@@ -85,7 +85,7 @@ mutable struct RobotDec{D} <: AbstractAgent
     rollout_parameters::RolloutInfo
     state::StateDec
     pathfinder::Any #ajout 
-    # ghost::Ghost
+    frontiers::Set
     planner::DPWPlanner
     last_comm::Int64
     buffers::Vector{Buffer}

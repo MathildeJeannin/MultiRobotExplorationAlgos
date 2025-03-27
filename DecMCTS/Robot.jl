@@ -87,7 +87,7 @@ function initialize_model(
         known_cells, seen_cells = gridmap_update!(gridmap_n, 0, id, [p.state.pos for p in robots_plans], vis_range, obstacles_pos, model; seen_cells = 0)
 
         robots_states = MVector{nb_robots, RobotState}([robots_plans[i].state for i in 1:nb_robots])
-        state = StateDec(id, robots_states, gridmap_n, known_cells, seen_cells, Set(), 0)
+        state = StateDec(id, robots_states, gridmap_n, known_cells, seen_cells, 0)
 
         walkmap = BitArray{2}(trues(extent))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
@@ -103,7 +103,7 @@ function initialize_model(
 
         buffers = [new_buffer() for i in 1:nb_robots]
 
-        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), deepcopy(pathfinder), []), state, pathfinder, planner, 0, buffers)
+        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), deepcopy(pathfinder), Set(), []), state, pathfinder, Set(), planner, 0, buffers)
         add_agent!(agent, pos[n], model)
     end
 
@@ -114,8 +114,10 @@ function initialize_model(
             simple_communication!(robot, r)
             empty_buffers!(robot)
         end
-        robot.state.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.state.frontiers; need_repartition=false)
+        robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.frontiers; need_repartition=false)
+        robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
         pathfinder_update!(robot.pathfinder, robot.state.gridmap)
+        pathfinder_update!(robot.rollout_parameters.pathfinder, robot.state.gridmap)
     end
 
     return model
@@ -175,25 +177,26 @@ function agent_step!(robot, model, vis_tree)
 
     if robot.state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
 
-        action = (0,0)
         if !isempty(robot.plans[robot.id].best_sequences)
-            pathfinder_update!(robot.pathfinder, robot.state.gridmap)
 
-            frontier_cell = first(robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]])
+            # frontier_cell = first(robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]])
             # route = plan_route!(robot, frontier_cell.goal, robot.pathfinder)
             # goal = route[1]
 
-            start_state = (robot.state.id, [s.pos for s in robot.state.robots_states], robot.state.gridmap)
-            goal_state = (robot.state.id, [s.pos for s in robot.state.robots_states], robot.state.gridmap)
-            goal_state[2][robot.id] = frontier_cell.goal
-            astar_results = astar(astar_neighbours, start_state, goal_state)
-            route = astar_results.path
-            goal = route[2][2][robot.id]
+            # start_state = (robot.state.id, [s.pos for s in robot.state.robots_states], robot.state.gridmap)
+            # goal_state = (robot.state.id, [s.pos for s in robot.state.robots_states], robot.state.gridmap)
+            # goal_state[2][robot.id] = frontier_cell.goal
+            # astar_results = astar(astar_neighbours, start_state, goal_state)
+            # route = astar_results.path
+            # goal = route[2][2][robot.id]
+
+            a = first(robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]])
             
 
         else
-            action = rand(robot.planner.mdp.possible_actions)
-            goal = nothing
+            # action = rand(robot.planner.mdp.possible_actions)
+            # goal = nothing
+            a = rand(robot.planner.mdp.possible_actions)
         end
         
         neighbours = collect(nearby_robots(robot, model, robot.vis_range))
@@ -203,12 +206,12 @@ function agent_step!(robot, model, vis_tree)
             robots_pos[n.id] = n.pos
         end
 
-        new_pos,_ = compute_new_pos(robot.state.gridmap, robot.id, robots_pos, 1, action, goal=goal)
+        new_pos,_ = compute_new_pos(robot.state.gridmap, robot.id, robots_pos, 1, a.direction)
         move_agent!(robot, new_pos, model)
         # move_agent!(robot.ghost, new_pos, model)
         # agent_step!(robot.ghost, new_pos, model)
 
-        robot.state = StateDec(robot.id, deepcopy(robot.state.robots_states), deepcopy(robot.state.gridmap), robot.state.known_cells, robot.state.seen_cells, deepcopy(robot.state.frontiers), robot.state.step+1)
+        robot.state = StateDec(robot.id, deepcopy(robot.state.robots_states), deepcopy(robot.state.gridmap), robot.state.known_cells, robot.state.seen_cells, robot.state.step+1)
 
         robot.state.robots_states[robot.id] = RobotState(robot.id, robot.pos)
         robot.plans[robot.id].state = RobotState(robot.id, robot.pos)
@@ -218,7 +221,11 @@ function agent_step!(robot, model, vis_tree)
 
         robot.state.known_cells, robot.state.seen_cells = gridmap_update!(robot.state.gridmap, robot.state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.seen_cells)
 
-        robot.state.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, robots_pos, robot.state.frontiers; need_repartition=false)
+        robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, robots_pos, robot.frontiers; need_repartition=false)
+        robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
+
+        pathfinder_update!(robot.pathfinder, robot.state.gridmap)
+        pathfinder_update!(robot.rollout_parameters.pathfinder, robot.state.gridmap)
 
 
         if vis_tree

@@ -99,7 +99,7 @@ end
 
 
 function frontiers_to_buffer(r1::RobotDec, r2::RobotDec)
-    r1.buffers[r2.id].frontiers = r2.state.frontiers
+    r1.buffers[r2.id].frontiers = r2.frontiers
 end
 
 
@@ -122,7 +122,7 @@ function empty_buffers!(r1::RobotDec)
             r1.state.robots_states[i] = deepcopy(r1.plans[i].state)
             merge_gridmap!(r1, buffer.gridmap)
             for f in buffer.frontiers
-                push!(r1.state.frontiers, f)
+                push!(r1.frontiers, f)
             end 
 
             buffer = new_buffer() 
