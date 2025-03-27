@@ -104,10 +104,51 @@ end
 
 function simple_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
     return sp.seen_cells - s.seen_cells
+    # return sp.seen_cells - s.seen_cells + 1/model[s.id].rollout_parameters.length_route
 end
 
 
 function POMDPs.isterminal(m::RobotMDP, s::StateDec)
     extent = size(s.gridmap)
     return extent[1]*extent[2]-s.known_cells <= abmproperties(model).invisible_cells[1]
+end
+
+
+
+function frontier_rollout(m::RobotMDP, s::StateDec, d::Int)
+    rollout_parameters = model[s.id].rollout_parameters
+    println("state step = $(s.step), d = $d")
+    if isempty(rollout_parameters.route)
+        rollout_parameters.frontiers = frontierDetectionMCTS(s.gridmap, rollout_parameters.frontiers, need_repartition=false)
+
+        if isempty(rollout_parameters.frontiers) 
+            return 1 #TODO
+        end
+
+        start = (s.id, [sr.pos for sr in s.robots_states], s.gridmap)
+        goal = (s.id, [sr.pos for sr in s.robots_states], s.gridmap)
+        goal[2][s.id] = rand(rollout_parameters.frontiers)
+
+        astar_results = astar(astar_neighbours, start, goal)
+        rollout_parameters.route = astar_results.path
+        popfirst!(rollout_parameters.route)
+        rollout_parameters.length_route = length(rollout_parameters.route)
+    end
+
+    action = popfirst!(rollout_parameters.route)
+
+    if (action[2][s.id] .- s.robots_states[s.id].pos) == (0,0)
+        a = ActionDec((0,0))
+    else
+        direction = (action[2][s.id] .- s.robots_states[s.id].pos)./distance(action[2][s.id], s.robots_states[s.id].pos)
+        a = ActionDec((round(direction[1], digits=2), round(direction[2], digits=2)))
+    end
+
+    sp, r = @gen(:sp, :r)(m, s, a, model[1].planner.rng)
+
+    if d <= m.max_depth
+        return r + m.discount*frontier_rollout(m, sp, d+1)
+    else
+        return r
+    end
 end

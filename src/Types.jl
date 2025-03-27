@@ -39,6 +39,7 @@ struct RobotMDP <: MDP{Union{StateDec,StateCen}, Union{ActionDec,ActionCen}}
     possible_actions::Union{Vector{ActionDec}, Vector{ActionCen}}
     reward_function::Function
     use_old_info::Bool
+    max_depth::Int
 end
 
 
@@ -53,6 +54,10 @@ end
 mutable struct RolloutInfo
     timestamp_rollout::Int64 #changé : avant = debut_rollout
     robots_plans::MVector
+    in_rollout::Bool
+    frontiers::Set
+    route::Any
+    length_route::Int
 end
 
 
