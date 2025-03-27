@@ -120,11 +120,9 @@ end
 
 
 function state_best_average_action(r::Robot, a::Int64)
-    extent = size(r.state.gridmap)
     as = filter(((sanode,spnode),) -> sanode == a, r.planner.tree.unique_transitions)
-    all_possible_actions = r.planner.mdp.possible_actions
-    dico_q = Dict(a=>0.0 for a in all_possible_actions)
-    dico_n = Dict(a=>0 for a in all_possible_actions)
+    dico_q = Dict(a=>0.0 for a in r.planner.mdp.possible_actions)
+    dico_n = Dict(a=>0 for a in r.planner.mdp.possible_actions)
     for (a,s) in as
         for ap in r.planner.tree.children[s]
             dico_q = Dict(a=>0.0 for a in r.planner.mdp.possible_actions)

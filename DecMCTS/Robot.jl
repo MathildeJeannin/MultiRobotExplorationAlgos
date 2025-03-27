@@ -65,13 +65,12 @@ function initialize_model(
 
     robots_plans = MVector{nb_robots, RobotPlan}([RobotPlan(RobotState(i,(1,1)), Vector{Vector{Tuple{Int,ActionDec}}}(undef, 0), Vector{Float64}(undef, 0), 0) for i in 1:nb_robots])
 
-    pos = repeat([(0,0)], outer = nb_robots)
+    pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
     for n ∈ 1:nb_robots
-        tmp_pos = (rand(T1),rand(T2))
-        while tmp_pos in pos || !isempty(ids_in_position(tmp_pos, model))
-            tmp_pos = (rand(T1),rand(T2))
+        pos[n] = (rand(T1),rand(T2))
+        while !isempty(ids_in_position(pos[n], model))
+            pos[n] = (rand(T1),rand(T2))
         end
-        pos[n] = tmp_pos
     end
 
     depth = maximum([depth,maximum(extent)*5])
@@ -89,23 +88,13 @@ function initialize_model(
         robots_states = MVector{nb_robots, RobotState}([robots_plans[i].state for i in 1:nb_robots])
         state = StateDec(id, robots_states, gridmap_n, known_cells, seen_cells, 0)
 
-        walkmap = BitArray{2}(trues(extent))
-        pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
-
         mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, fct_reward, use_old_info)
 
         solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
         
         planner = solve(solver, mdp)
 
-        # ghost = Ghost{D}(id+10000, pos[n])
-        # add_agent!(ghost, pos[n], model)
-
-        buffers = [new_buffer() for i in 1:nb_robots]
-
-        # agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), deepcopy(pathfinder), Set(), []), state, pathfinder, Set(), planner, 0, buffers)
-        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, robots_plans, pathfinder, Set(), []), state, pathfinder, [Set() for i in 1:nb_robots], planner, 0, buffers)
-
+        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans)), state, planner, 0)
         add_agent!(agent, pos[n], model)
     end
 
@@ -113,13 +102,9 @@ function initialize_model(
     for robot in robots
         in_range = nearby_robots(robot, model, robot.com_range)
         for r in in_range
-            simple_communication!(robot, r)
-            # empty_buffers!(robot)
+            exchange_positions!(robot, r)
         end
-        robot.frontiers[robot.id] = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, [p.state.pos for p in robot.plans], robot.frontiers[robot.id]; need_repartition=false)
-        # robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
-        pathfinder_update!(robot.pathfinder, robot.state.gridmap)
-        pathfinder_update!(robot.rollout_parameters.pathfinder, robot.state.gridmap)
+
     end
 
     return model
@@ -174,36 +159,11 @@ function agent_step!(robot, model, vis_tree)
     extent = size(model[1].state.gridmap)
     nb_robots = length(robot.plans)
 
-    # empty_buffers!(robot)
-    # move_agent!(robot, robot.state.robots_states[robot.id].pos, model)
-
-    for f in robot.frontiers
-        for cell in f
-            push!(robot.frontiers[robot.id], cell)
-        end
-    end
-
     if robot.state.known_cells != extent[1]*extent[2] - abmproperties(model).invisible_cells[1]
 
         if !isempty(robot.plans[robot.id].best_sequences)
-
-            # frontier_cell = first(robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]])
-            # route = plan_route!(robot, frontier_cell.goal, robot.pathfinder)
-            # goal = route[1]
-
-            # start_state = (robot.state.id, [s.pos for s in robot.state.robots_states], robot.state.gridmap)
-            # goal_state = (robot.state.id, [s.pos for s in robot.state.robots_states], robot.state.gridmap)
-            # goal_state[2][robot.id] = frontier_cell.goal
-            # astar_results = astar(astar_neighbours, start_state, goal_state)
-            # route = astar_results.path
-            # goal = route[2][2][robot.id]
-
             a = first(robot.plans[robot.id].best_sequences[findall(item->item==maximum(robot.plans[robot.id].assigned_proba), robot.plans[robot.id].assigned_proba)[1]])
-            
-
         else
-            # action = rand(robot.planner.mdp.possible_actions)
-            # goal = nothing
             a = rand(robot.planner.mdp.possible_actions)
         end
         
@@ -216,8 +176,6 @@ function agent_step!(robot, model, vis_tree)
 
         new_pos,_ = compute_new_pos(robot.state.gridmap, robot.id, robots_pos, 1, a.direction)
         move_agent!(robot, new_pos, model)
-        # move_agent!(robot.ghost, new_pos, model)
-        # agent_step!(robot.ghost, new_pos, model)
 
         robot.state = StateDec(robot.id, deepcopy(robot.state.robots_states), deepcopy(robot.state.gridmap), robot.state.known_cells, robot.state.seen_cells, robot.state.step+1)
 
@@ -228,13 +186,6 @@ function agent_step!(robot, model, vis_tree)
         obstacles_pos = [element.pos for element in nearby_obstacles(robot, model, robot.vis_range)]
 
         robot.state.known_cells, robot.state.seen_cells = gridmap_update!(robot.state.gridmap, robot.state.known_cells, robot.id, robots_pos, robot.vis_range, obstacles_pos, model, seen_cells = robot.state.seen_cells)
-
-        # robot.frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, robot.state.gridmap, robots_pos, robot.frontiers; need_repartition=false)
-        # robot.rollout_parameters.frontiers = deepcopy(robot.frontiers)
-
-        # pathfinder_update!(robot.pathfinder, robot.state.gridmap)
-        # pathfinder_update!(robot.rollout_parameters.pathfinder, robot.state.gridmap)
-
 
         if vis_tree
             inchrome(D3Tree(robot.planner.tree, init_expand=4))
