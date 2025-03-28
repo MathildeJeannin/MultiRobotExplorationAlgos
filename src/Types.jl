@@ -107,4 +107,10 @@ mutable struct SharedMemory
     pathfinder::Any
 end
 
+
+struct AStarState
+    pos::Tuple{Int, Int}
+    gridmap::MMatrix
+end 
+
 Robot = Union{RobotCen,RobotDec,RobotPosMin}

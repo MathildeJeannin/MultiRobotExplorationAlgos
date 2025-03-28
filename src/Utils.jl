@@ -41,12 +41,12 @@ end
 
 function astar_neighbours(state) # state = pos + gridmap
     ok_neighbours = []
-    pos, gridmap = state
+    pos, gridmap = state.pos, state.gridmap
     extent = size(gridmap)
     for (dx,dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)]
         next_pos = pos .+ (dx,dy) 
         if next_pos[1] > 0 && next_pos[1] <= extent[1] && next_pos[2] > 0 && next_pos[2] <= extent[2] && gridmap[next_pos[1],next_pos[2]] != -1
-            push!(ok_neighbours, (next_pos, gridmap))
+            push!(ok_neighbours, AStarState(next_pos, gridmap))
         end
     end
     return ok_neighbours

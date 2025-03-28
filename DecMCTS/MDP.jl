@@ -135,11 +135,12 @@ function frontier_rollout(m::RobotMDP, s::StateDec, d::Int)
         a = ActionDec((0,0))
     else
         # TODO trouver pourquoi des fois pos = Int au lieu de Tuple{Int,Int}
-        if distance(rollout_parameters.route[1][1], s.robots_states[s.id].pos) > 1 # l'appel à transition précédent n'a pas pu bouger le robot car obstacle ou voisin, il est donc resté immobile
+        if distance(rollout_parameters.route[1].pos, s.robots_states[s.id].pos) > 1 # l'appel à transition précédent n'a pas pu bouger le robot car obstacle ou voisin, il est donc resté immobile
             rollout_parameters.route = nouvelle_route(rollout_parameters, s)
         end
 
-        next_pos = popfirst!(rollout_parameters.route)[1]
+        next_astar_state = popfirst!(rollout_parameters.route)
+        next_pos = next_astar_state.pos
         direction = (next_pos .- s.robots_states[s.id].pos)./distance(next_pos, s.robots_states[s.id].pos)
 
         a = ActionDec((round(direction[1], digits=2), round(direction[2], digits=2)))
@@ -162,8 +163,8 @@ function nouvelle_route(rollout_parameters::RolloutInfo, s::StateDec)
         return 1
     end
 
-    start = (s.robots_states[s.id].pos, s.gridmap)
-    goal = (rand(rollout_parameters.frontiers), s.gridmap)
+    start = AStarState(s.robots_states[s.id].pos, s.gridmap)
+    goal = AStarState(rand(rollout_parameters.frontiers), s.gridmap)
 
     astar_results = astar(astar_neighbours, start, goal)
     route = astar_results.path[2:end]
