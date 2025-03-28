@@ -18,15 +18,22 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
         next_robots_states = deepcopy(s.robots_states)
         next_gridmap = deepcopy(s.gridmap)
 
-        if s.step - robot.rollout_parameters.timestamp_rollout == 0 
+        rollout_parameters = robot.rollout_parameters
+
+        if s.step - rollout_parameters.timestamp_rollout == 0 
+            rollout_parameters.in_rollout = false
             sequences, states, timestamps = select_best_sequences(robot)
             for i in eachindex(sequences)
                 if i!=robot.id
-                    robot.rollout_parameters.robots_plans[i].best_sequences = sequences[i]
-                    robot.rollout_parameters.robots_plans[i].state = states[i]
-                    robot.rollout_parameters.robots_plans[i].timestamp = timestamps[i]
+                    rollout_parameters.robots_plans[i].best_sequences = sequences[i]
+                    rollout_parameters.robots_plans[i].state = states[i]
+                    rollout_parameters.robots_plans[i].timestamp = timestamps[i]
                 end
             end
+        end
+
+        if s in robot.planner.tree.s_labels
+            rollout_parameters.in_rollout = false
         end
 
         next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, a.direction)
@@ -36,7 +43,7 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
         next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
 
-        for plan in robot.rollout_parameters.robots_plans
+        for plan in rollout_parameters.robots_plans
             if plan.state.id != robot.id
                 if !isempty(plan.best_sequences) && !isempty(plan.best_sequences[1]) && (m.use_old_info || (!m.use_old_info && s.step - plan.timestamp < length(plan.best_sequences[1])))
                     action = popfirst!(plan.best_sequences[1])
@@ -117,38 +124,48 @@ end
 
 function frontier_rollout(m::RobotMDP, s::StateDec, d::Int)
     rollout_parameters = model[s.id].rollout_parameters
-    println("state step = $(s.step), d = $d")
-    if isempty(rollout_parameters.route)
-        rollout_parameters.frontiers = frontierDetectionMCTS(s.gridmap, rollout_parameters.frontiers, need_repartition=false)
-
-        if isempty(rollout_parameters.frontiers) 
-            return 1 #TODO
-        end
-
-        start = (s.id, [sr.pos for sr in s.robots_states], s.gridmap)
-        goal = (s.id, [sr.pos for sr in s.robots_states], s.gridmap)
-        goal[2][s.id] = rand(rollout_parameters.frontiers)
-
-        astar_results = astar(astar_neighbours, start, goal)
-        rollout_parameters.route = astar_results.path
-        popfirst!(rollout_parameters.route)
-        rollout_parameters.length_route = length(rollout_parameters.route)
+    
+    if isempty(rollout_parameters.route) || !rollout_parameters.in_rollout
+        rollout_parameters.in_rollout = true
+        rollout_parameters.route = nouvelle_route(rollout_parameters, s)
     end
 
-    action = popfirst!(rollout_parameters.route)
 
-    if (action[2][s.id] .- s.robots_states[s.id].pos) == (0,0)
+    if isempty(rollout_parameters.route) #goal impossible donc path = [pos] et route = [], 
         a = ActionDec((0,0))
     else
-        direction = (action[2][s.id] .- s.robots_states[s.id].pos)./distance(action[2][s.id], s.robots_states[s.id].pos)
+        # TODO trouver pourquoi des fois pos = Int au lieu de Tuple{Int,Int}
+        if distance(rollout_parameters.route[1][1], s.robots_states[s.id].pos) > 1 # l'appel à transition précédent n'a pas pu bouger le robot car obstacle ou voisin, il est donc resté immobile
+            rollout_parameters.route = nouvelle_route(rollout_parameters, s)
+        end
+
+        next_pos = popfirst!(rollout_parameters.route)[1]
+        direction = (next_pos .- s.robots_states[s.id].pos)./distance(next_pos, s.robots_states[s.id].pos)
+
         a = ActionDec((round(direction[1], digits=2), round(direction[2], digits=2)))
     end
 
-    sp, r = @gen(:sp, :r)(m, s, a, model[1].planner.rng)
+    sp, r = @gen(:sp, :r)(m, s, a, model[s.id].planner.rng)
 
-    if d <= m.max_depth
-        return r + m.discount*frontier_rollout(m, sp, d+1)
+    if d > 0 && !isterminal(m, sp)
+        return r + m.discount*frontier_rollout(m, sp, d-1)
     else
         return r
     end
+end
+
+
+
+function nouvelle_route(rollout_parameters::RolloutInfo, s::StateDec)
+    rollout_parameters.frontiers = frontierDetectionMCTS(s.gridmap, rollout_parameters.frontiers, need_repartition=false)
+    if isempty(rollout_parameters.frontiers) 
+        return 1
+    end
+
+    start = (s.robots_states[s.id].pos, s.gridmap)
+    goal = (rand(rollout_parameters.frontiers), s.gridmap)
+
+    astar_results = astar(astar_neighbours, start, goal)
+    route = astar_results.path[2:end]
+    return route
 end

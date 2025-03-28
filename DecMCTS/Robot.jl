@@ -73,7 +73,7 @@ function initialize_model(
         end
     end
 
-    depth = maximum([depth,maximum(extent)*5])
+    # depth = maximum([depth,maximum(extent)*5])
 
     for n in 1:nb_robots
         id = n
