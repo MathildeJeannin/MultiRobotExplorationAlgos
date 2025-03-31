@@ -51,12 +51,18 @@ end
 end
 
 
+struct AStarState
+    pos::Tuple{Int, Int}
+    gridmap::MMatrix
+end 
+
+
 mutable struct RolloutInfo
     timestamp_rollout::Int64 #changé : avant = debut_rollout
     robots_plans::MVector
     in_rollout::Bool
     frontiers::Set
-    route::Any
+    route::Vector{AStarState}
     length_route::Int
 end
 
@@ -108,9 +114,5 @@ mutable struct SharedMemory
 end
 
 
-struct AStarState
-    pos::Tuple{Int, Int}
-    gridmap::MMatrix
-end 
 
 Robot = Union{RobotCen,RobotDec,RobotPosMin}
