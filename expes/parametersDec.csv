@@ -1,3 +1,5 @@
 alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map,com_range,alpha,extent1,extent2,nb_blocs,begin_zone,fr_communication,fct_reward,fct_communication,use_old_info
-1,1,1,1,20,500,0,0.85,5,0,500,4,10,0.01,40,40,0,5,1,simple_reward,simple_communication!,0
-1,1,1,1,20,500,0,0.85,5,0,500,4,10,0.01,40,40,0,5,1,simple_reward,transitive_communication!,0
+1,1,1,1,20,100,0,0.85,5,0,500,2,10,0.01,40,40,0,5,1,simple_reward,simple_communication!,0
+1,1,1,1,20,100,0,0.85,5,0,500,3,10,0.01,40,40,0,5,1,simple_reward,simple_communication!,0
+1,1,1,1,20,100,0,0.85,5,0,500,4,10,0.01,40,40,0,5,1,simple_reward,simple_communication!,0
+1,1,1,1,20,100,0,0.85,5,0,500,5,10,0.01,40,40,0,5,1,simple_reward,simple_communication!,0
