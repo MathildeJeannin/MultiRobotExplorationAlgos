@@ -111,6 +111,26 @@ function frontierRepartition(gridmap::MMatrix, frontier_cells::Set) # = BFS
     return frontiers
 end
 
+function goToFrontier(frontier_cell::Tuple, pos::Tuple, gridmap::MMatrix)
+    extent = size(gridmap)
+    neighbours = []
+    best_neighbour = frontier_cell
+    min_dist = 1000000000
+
+    for (dx,dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+        nx, ny = frontier_cell[1]+dx, frontier_cell[2]+dy
+        if nx > 0 && nx <= extent[1] && ny > 0 && ny <= extent[2] && gridmap[nx,ny] == 0
+            d = distance(pos, (nx,ny))
+            if d < min_dist
+                best_neighbour = (nx,ny)
+                min_dist = d
+            end
+        end
+    end
+
+    return best_neighbour
+end
+
 
 function buildGraph(frontier_cells::Set)
     graph = Dict()

@@ -2,15 +2,20 @@ function add_map(model, map, nb_robots)
     D = 2
     f = open("./src/maps/map$map.txt", "r")
     id = nb_robots+1
-    _ = readline(f)
+    extent_str = readline(f)
+    extent_str_tuple = split(extent_str, ";")
+    extent = (parse(Int64, extent_str_tuple[1]), parse(Int64, extent_str_tuple[2]))
     invisible_cells = parse(Int64, readline(f))
+    gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
     for line in readlines(f)
         str_pos = split(line, "\t")
-        pos = (parse(Int64, str_pos[1]),parse(Int64, str_pos[2]))
+        pos = x,y = (parse(Int64, str_pos[1]),parse(Int64, str_pos[2]))
         agent = Obstacle{D}(id, pos)
         add_agent!(agent, pos, model)
         id+=1
+        gridmap[x,y] = -1
     end
+    return gridmap
 end
 
 

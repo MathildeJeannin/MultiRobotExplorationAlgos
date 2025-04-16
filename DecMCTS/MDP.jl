@@ -36,13 +36,13 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
             rollout_parameters.in_rollout = false
         end
 
-        # next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, a.direction)
+        next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, a.direction)
 
-        # next_robots_states[robot.id] = RobotState(robot.id, next_pos)
+        next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
-        # next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
-        next_known_cells = 0
+        # next_known_cells = 0
 
 
         for plan in rollout_parameters.robots_plans
@@ -64,11 +64,14 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
             end
         end
 
-        next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, a.direction)
+        # next_pos, obstacle_pos = compute_new_pos(s.gridmap, robot.id, [rs.pos for rs in next_robots_states], 1, a.direction)
 
-        next_robots_states[robot.id] = RobotState(robot.id, next_pos)
+        # next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
-        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+        # next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+
+        # _print_gridmap(next_gridmap, next_robots_states)
+        # sleep(0.1)
 
 
         sp = StateDec(robot.id, next_robots_states, next_gridmap, next_known_cells, next_seen_cells, s.step+1)
@@ -119,8 +122,8 @@ end
 
 
 function simple_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
-    return sp.seen_cells - s.seen_cells
-    # return sp.seen_cells - s.seen_cells + 1/model[s.id].rollout_parameters.length_route
+    # return sp.seen_cells - s.seen_cells
+    return sp.seen_cells - s.seen_cells 
 end
 
 
@@ -173,9 +176,34 @@ function nouvelle_route(rollout_parameters::RolloutInfo, s::StateDec)
     end
 
     start = AStarState(s.robots_states[s.id].pos, s.gridmap)
-    goal = AStarState(rand(rollout_parameters.frontiers), s.gridmap)
+    # goal_cell = goToFrontier(rand(rollout_parameters.frontiers), s.robots_states[s.id].pos, s.gridmap)
+    goal_cell = rand(rollout_parameters.frontiers)
+    goal = AStarState(goal_cell, s.gridmap)
 
     astar_results = astar(astar_neighbours, start, goal)
     route = astar_results.path[2:end]
     return route
+end
+
+
+function special_Q(m::RobotMDP, s::StateDec, a::ActionDec)
+    robots_pos = [rs.pos for rs in s.robots_states]
+    next_pos, _ = compute_new_pos(s.gridmap, s.id, robots_pos, 1, a.direction)
+    if next_pos == robots_pos[s.id]
+        return -1000000.0
+    else
+        return 0.0
+    end
+end
+
+
+
+function special_N(m::RobotMDP, s::StateDec, a::ActionDec)
+    robots_pos = [rs.pos for rs in s.robots_states]
+    next_pos, _ = compute_new_pos(s.gridmap, s.id, robots_pos, 1, a.direction)
+    if next_pos == robots_pos[s.id]
+        return 1000000
+    else
+        return 0
+    end
 end
