@@ -126,8 +126,7 @@ function run(;
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-    # while (max_knowledge <= (extent[1]*extent[2]) - abmproperties(model).invisible_cells[1]) && (nb_steps < max_steps)
-    while (max_knowledge < (extent[1]*extent[2]) - abmproperties(model).nb_obstacles[1]) && (nb_steps < max_steps)
+    while (max_knowledge <= (extent[1]*extent[2]) - abmproperties(model).invisible_cells[1]) && (nb_steps < max_steps)
 
         nb_steps += 1
 

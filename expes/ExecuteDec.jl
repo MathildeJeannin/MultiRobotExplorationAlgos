@@ -31,7 +31,7 @@ N = parse(Int64, ARGS[23])
 
 t0 = now()
 
-folder = "/n_iterations=$(n_iterations)_num_map=$(num_map)_com_range=$(com_range)_fr_communication=$(fr_communication)_fct_reward=$(fct_reward)_fct_communication=$(fct_communication)_use_old_info=$(use_old_info)/"
+folder = "./expes/Logs/Dec/n_iterations=$(n_iterations)_num_map=$(num_map)_com_range=$(com_range)_fr_communication=$(fr_communication)_fct_reward=$(fct_reward)_fct_communication=$(fct_communication)_use_old_info=$(use_old_info)/"
 
 file = folder*"$(N)_$(t0).csv"
 
@@ -42,7 +42,7 @@ catch e
 end
 
 
-nb_steps, cov = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, com_range=com_range, alpha=alpha, file="Logs/Dec"*folder, id_expe=N, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=(begin_zone,begin_zone), fr_communication=fr_communication, fct_reward=fct_reward, fct_communication=fct_communication , use_old_info=use_old_info)
+nb_steps = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, com_range=com_range, alpha=alpha, file=folder, id_expe=N, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=(begin_zone,begin_zone), fr_communication=fr_communication, fct_reward=fct_reward, fct_communication=fct_communication , use_old_info=use_old_info)
 
 # df = DataFrame(alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, com_range=com_range, extent=(extent1,extent2), nb_blocs=nb_blocs, fr_communication=fr_communication, fct_reward=fct_reward, fct_communication=fct_communication, use_old_info=use_old_info, nb_steps = nb_steps, cov=cov)
 

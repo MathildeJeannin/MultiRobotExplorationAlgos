@@ -28,7 +28,7 @@ function initialize_model(
     use_old_info=false
 )
 
-    # gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
+    gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
 
     # initialize model
     space = GridSpace(extent, periodic = false, metric = :euclidean)
@@ -45,7 +45,8 @@ function initialize_model(
         nb_obstacles, 
         invisible_cells,
         extent,
-        nb_robots
+        nb_robots,
+        num_map
     )
 
     global model = AgentBasedModel(Union{RobotDec{D}, Obstacle{D}}, space; agent_step!,
@@ -53,14 +54,13 @@ function initialize_model(
         properties = properties
     )
 
-    # if num_map == 0
-    #     add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
-    # elseif num_map > 0
-    #     add_map(model, num_map, nb_robots)
-    # else 
-    #     abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
-    # end
-    gridmap = add_map(model, num_map, nb_robots)
+    if num_map == 0
+        add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
+    elseif num_map > 0
+        add_map(model, num_map, nb_robots)
+    else 
+        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
+    end
 
     possible_actions = compute_actions_decMCTS()
 
@@ -128,10 +128,10 @@ function agents_simulate!(robot, model, alpha, beta;
 
         function bloc_mcts()
             robot.rollout_parameters.timestamp_rollout = robot.state.step
-            # try 
+            try 
                 action_info(robot.planner, robot.state)
-            # catch e
-            # end
+            catch e
+            end
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
 
             update_distribution!(robot, alpha, beta)

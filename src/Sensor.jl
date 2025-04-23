@@ -39,17 +39,17 @@ function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_p
         for element in ray[2:end]
             x,y = element[1],element[2]
 
-            if transition && gridmap[x,y] == -2
-                gridmap[x,y] = rand(distribution)
-                if seen_cells != -1
-                    seen_cells += 1
-                end
-                known_cells += 1
-                if gridmap[x,y] == -1
-                    push!(obstacles_pos, (x,y))
-                    break
-                end
-            end
+            # if transition && gridmap[x,y] == -2
+            #     gridmap[x,y] = rand(distribution)
+            #     if seen_cells != -1
+            #         seen_cells += 1
+            #     end
+            #     known_cells += 1
+            #     if gridmap[x,y] == -1
+            #         push!(obstacles_pos, (x,y))
+            #         break
+            #     end
+            # end
 
             if gridmap[x,y] == -1 || (x,y) ∈ other_robots_pos
                 break
@@ -381,4 +381,19 @@ function mean_cov(coverage_map)
         end
     end
     return output
+end
+
+
+function add_walls_to_gridmap!(gridmap::MMatrix, num_map::Int)
+    D = 2
+    f = open("./src/maps/map$num_map.txt", "r")
+    extent_str = readline(f)
+    extent_str_tuple = split(extent_str, ";")
+    extent = (parse(Int64, extent_str_tuple[1]), parse(Int64, extent_str_tuple[2]))
+    invisible_cells = parse(Int64, readline(f))
+    for line in readlines(f)
+        str_pos = split(line, "\t")
+        pos = x,y = (parse(Int64, str_pos[1]),parse(Int64, str_pos[2]))
+        gridmap[x,y] = -1
+    end
 end
