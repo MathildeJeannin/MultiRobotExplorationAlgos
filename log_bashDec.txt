@@ -1,0 +1,8 @@
+Creating 1 simu, n = 0
+Finished 1 simu, n = 1
+Creating 1 simu, n = 0
+Finished 1 simu, n = 1
+Creating 1 simu, n = 0
+Finished 1 simu, n = 1
+Creating 1 simu, n = 0
+Finished 1 simu, n = 1
