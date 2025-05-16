@@ -64,6 +64,8 @@ mutable struct RolloutInfo
     frontiers::Set
     route::Vector{AStarState}
     length_route::Int
+    breakpoint::Vector{Int}
+    last_best_action::ActionDec
 end
 
 

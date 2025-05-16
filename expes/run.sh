@@ -2,7 +2,7 @@
 #!/bin/bash
 
 # mkdir Resultats
-mkdir Logs
+mkdir ./expes/Logs
 
 # echo "Executing file for first compilation" 
 # julia Execute.jl $alpha_state $k_state $exploration_constant $n_iterations $keep_tree $discount
@@ -46,7 +46,7 @@ nj=1
 start=1
 
 # mkdir Resultats/Dec
-mkdir Logs/Dec
+mkdir ./expes/Logs/Dec
 
 while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 rec_column14 rec_column15 rec_column16 rec_column17 rec_column18 rec_column19 rec_column20 rec_column21 rec_column22
 do

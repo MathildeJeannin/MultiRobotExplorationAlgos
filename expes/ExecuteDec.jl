@@ -37,7 +37,7 @@ file = folder*"$(N)_$(t0).csv"
 
 
 try
-    mkdir("expes/Logs/Dec"*folder)
+    mkdir(folder)
 catch e
 end
 
@@ -48,8 +48,8 @@ nb_steps = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_
 
 # CSV.write("expes/Resultats/Dec"*file, df, writeheader=true, delim = ';', append=true)
 
-log_file = open("expes/Logs/Dec"*folder*"$N.txt", "a")
-write(log_file, "run $(N); time = $(t0); nb_steps = $(nb_steps), cov=$cov\n")
+log_file = open(folder*"$N.txt", "a")
+write(log_file, "run $(N); time = $(t0); nb_steps = $(nb_steps)\n")
 close(log_file)
 
 

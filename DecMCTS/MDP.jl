@@ -30,6 +30,12 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
                     rollout_parameters.robots_plans[i].timestamp = timestamps[i]
                 end
             end
+            best_action_index = argmax(robot.planner.tree.q)
+            best_action = robot.planner.tree.a_labels[best_action_index]
+            if best_action != robot.rollout_parameters.last_best_action
+                robot.rollout_parameters.last_best_action = best_action
+                rollout_parameters.breakpoint[end] += 1
+            end
         end
 
         if s in robot.planner.tree.s_labels
@@ -40,12 +46,12 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
 
         next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
-        #TODO : a enlever apres test rollout sur carte connue 
-        obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
-        # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
+        # #TODO : a enlever apres test rollout sur carte connue 
+        # obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
+        # # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
         ##
 
-        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, obstacle_pos, model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
 
         for plan in rollout_parameters.robots_plans
@@ -59,14 +65,14 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
                 
                 next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
 
-                #TODO : a enlever apres test rollout sur carte connue 
-                obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
-                # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
+                # #TODO : a enlever apres test rollout sur carte connue 
+                # obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
+                # # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
                 ##
 
                 next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
 
-                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, obstacle_pos, model, transition = true, distribution = distribution)
+                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
             end
         end
 
@@ -77,7 +83,7 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
         # next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
         # _print_gridmap(next_gridmap, next_robots_states)
-        # sleep(0.1)
+        # sleep(1.0)
 
 
         sp = StateDec(robot.id, next_robots_states, next_gridmap, next_known_cells, next_seen_cells, s.step+1)
@@ -144,13 +150,9 @@ function frontier_rollout(m::RobotMDP, s::StateDec, d::Int)
     rollout_parameters = model[s.id].rollout_parameters
     
     if isempty(rollout_parameters.route) || !rollout_parameters.in_rollout
-        #TODO : a enlever apres test sur carte connue
-        s_carte_connue = deepcopy(s)
-        add_walls_to_gridmap!(s_carte_connue.gridmap, abmproperties(model).num_map)
-        ##
-
         rollout_parameters.in_rollout = true
-        rollout_parameters.route = nouvelle_route(rollout_parameters, s_carte_connue)
+        rollout_parameters.route = nouvelle_route(rollout_parameters, s)
+        # println([r.pos for r in rollout_parameters.route])
         if isempty(rollout_parameters.route)
             return 1
         end
@@ -158,10 +160,12 @@ function frontier_rollout(m::RobotMDP, s::StateDec, d::Int)
 
     if distance(rollout_parameters.route[1].pos, s.robots_states[s.id].pos) > 1 # l'appel à transition précédent n'a pas pu bouger le robot car obstacle ou voisin, il est donc resté immobile
         rollout_parameters.route = nouvelle_route(rollout_parameters, s)
+        # println([r.pos for r in rollout_parameters.route])
         if isempty(rollout_parameters.route)
             return 1
         end
     end
+
     
     next_astar_state = popfirst!(rollout_parameters.route)
     next_pos = next_astar_state.pos
@@ -185,6 +189,11 @@ function nouvelle_route(rollout_parameters::RolloutInfo, s::StateDec)
     if isempty(rollout_parameters.frontiers) 
         return []
     end
+
+    #TODO : a enlever apres test sur carte connue
+    # s_carte_connue = deepcopy(s)
+    # add_walls_to_gridmap!(s_carte_connue.gridmap, abmproperties(model).num_map)
+    # ##
 
     start = AStarState(s.robots_states[s.id].pos, s.gridmap)
     # goal_cell = goToFrontier(rand(rollout_parameters.frontiers), s.robots_states[s.id].pos, s.gridmap)

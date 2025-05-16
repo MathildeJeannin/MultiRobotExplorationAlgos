@@ -126,10 +126,9 @@ function run(;
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-    while (max_knowledge <= (extent[1]*extent[2]) - abmproperties(model).invisible_cells[1]) && (nb_steps < max_steps)
+    while (max_knowledge < (extent[1]*extent[2]) - abmproperties(model).invisible_cells[1]) && (nb_steps < max_steps)
 
         nb_steps += 1
-
         
         @threads for robot in robots 
             agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, fr_communication = fr_communication, fct_communication = simple_communication!)
