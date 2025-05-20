@@ -47,11 +47,11 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
         next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
         # #TODO : a enlever apres test rollout sur carte connue 
-        # obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
+        obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
         # # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
         ##
 
-        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, obstacle_pos, model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
 
         for plan in rollout_parameters.robots_plans
@@ -66,13 +66,13 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
                 next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
 
                 # #TODO : a enlever apres test rollout sur carte connue 
-                # obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
+                obstacle_pos = [element.pos for element in nearby_obstacles(next_robot_pos, model, robot.vis_range)]
                 # # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
                 ##
 
                 next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
 
-                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
+                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, obstacle_pos, model, transition = true, distribution = distribution)
             end
         end
 
@@ -81,9 +81,9 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
         # next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
         # next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
-
-        # _print_gridmap(next_gridmap, next_robots_states)
-        # sleep(1.0)
+        println("robot $(s.id)")
+        _print_gridmap(next_gridmap, next_robots_states)
+        sleep(0.01)
 
 
         sp = StateDec(robot.id, next_robots_states, next_gridmap, next_known_cells, next_seen_cells, s.step+1)
