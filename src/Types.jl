@@ -38,7 +38,7 @@ struct RobotMDP <: MDP{Union{StateDec,StateCen}, Union{ActionDec,ActionCen}}
     discount::Float64
     possible_actions::Union{Vector{ActionDec}, Vector{ActionCen}}
     reward_function::Function
-    use_old_info::Bool
+    filtering_info::Bool
     max_depth::Int
 end
 
@@ -92,6 +92,7 @@ mutable struct RobotDec{D} <: AbstractAgent
     state::StateDec
     planner::DPWPlanner
     last_comm::Int64
+    last_action::ActionDec
 end
 
 

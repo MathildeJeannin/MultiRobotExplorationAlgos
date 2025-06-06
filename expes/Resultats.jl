@@ -7,7 +7,7 @@ using StaticArrays
 function assemble()
     nb_robots=5
     res_file = "allres.csv"
-    CSV.write(res_file, DataFrame(a = "num_map", b = "com_range", c = "fr_communication", d = "fct_reward", e = "fct_communication", f = "use_old_info", nb_steps = "nb_steps", cov = "cov"), delim = ";", header= false)
+    CSV.write(res_file, DataFrame(a = "num_map", b = "com_range", c = "fr_communication", d = "fct_reward", e = "fct_communication", f = "filtering_info", nb_steps = "nb_steps", cov = "cov"), delim = ";", header= false)
 
     mode = "Dec"
     path_folders = "./Logs/"*mode*"/"
@@ -15,7 +15,7 @@ function assemble()
     folders = filter(x->x!="save", readdir(path_folders))
     for folder in folders
         string_param = split(folder, ['=',','])
-        param = DataFrame(num_map = [parse(Int64, string_param[4]) for i in 1:nb_robots], com_range = [parse(Int64, string_param[6]) for i in 1:nb_robots], fr_communication = [parse(Float64, string_param[8]) for i in 1:nb_robots], fct_reward = [string_param[10] for i in 1:nb_robots], fct_communication = [string_param[12] for i in 1:nb_robots], use_old_info = [parse(Bool, string_param[14]) for i in 1:nb_robots])
+        param = DataFrame(num_map = [parse(Int64, string_param[4]) for i in 1:nb_robots], com_range = [parse(Int64, string_param[6]) for i in 1:nb_robots], fr_communication = [parse(Float64, string_param[8]) for i in 1:nb_robots], fct_reward = [string_param[10] for i in 1:nb_robots], fct_communication = [string_param[12] for i in 1:nb_robots], filtering_info = [parse(Bool, string_param[14]) for i in 1:nb_robots])
     
         path = path_folders*folder*"/"
         files = filter(endswith("csv"), readdir(path))
@@ -42,13 +42,13 @@ function graph_evolution_during_simu(parameters_lines::Vector, title::String, la
     end
         
     parameters = df_param[parameters_lines,:]
-    parameters = parameters[:, ["num_map", "extent1", "extent2", "com_range", "fr_communication", "fct_reward", "fct_communication", "use_old_info"]]
+    parameters = parameters[:, ["num_map", "extent1", "extent2", "com_range", "fr_communication", "fct_reward", "fct_communication", "filtering_info"]]
 
     all_res = Dict{DataFrameRow, Vector{DataFrame}}()
     
 
     for param in eachrow(parameters)
-        path = "./Logs/Dec/n_iterations=500,num_map=$(param.num_map),com_range=$(param.com_range),fr_communication=$(param.fr_communication),fct_reward=$(param.fct_reward),fct_communication=$(param.fct_communication),use_old_info=$(Bool(param.use_old_info))/"
+        path = "./Logs/Dec/n_iterations=500,num_map=$(param.num_map),com_range=$(param.com_range),fr_communication=$(param.fr_communication),fct_reward=$(param.fct_reward),fct_communication=$(param.fct_communication),filtering_info=$(Bool(param.filtering_info))/"
         files = filter(endswith("csv"), readdir(path))
 
         df_percent_all = DataFrame(steps = [i for i in 1:500])
@@ -146,7 +146,7 @@ end
 
 function whiskers_graph(parameters_lines::Vector, title::String, X_labels::Vector)
     # ligne dans le fichier excel 
-    # param de la forme DataFrame("num_map", "com_range", "fr_communication", "fct_reward", "fct_communication", "use_old_info")
+    # param de la forme DataFrame("num_map", "com_range", "fr_communication", "fct_reward", "fct_communication", "filtering_info")
 
     # whiskers plot : 
     # 5 quantiles
@@ -159,7 +159,7 @@ function whiskers_graph(parameters_lines::Vector, title::String, X_labels::Vecto
     nb_robots=5
 
     parameters = df_param[parameters_lines,:]
-    parameters = parameters[:, ["num_map", "com_range", "fr_communication", "fct_reward", "fct_communication", "use_old_info"]]
+    parameters = parameters[:, ["num_map", "com_range", "fr_communication", "fct_reward", "fct_communication", "filtering_info"]]
     # sort!(parameters)
 
     f = Figure()
@@ -171,7 +171,7 @@ function whiskers_graph(parameters_lines::Vector, title::String, X_labels::Vecto
     param_name = []
     j = 1
     for param in eachrow(parameters)
-        resultats = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.use_old_info .== param.use_old_info),:]
+        resultats = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.filtering_info .== param.filtering_info),:]
         for i in 1:nrow(resultats)
             if i%nb_robots==0
                 push!(data, resultats[i,:nb_steps])
@@ -191,11 +191,11 @@ function stats_map_random(parameters_lines::Vector)
     nb_robots=5
 
     res_file = "stats_maps_random.csv"
-    res_df = DataFrame(num_map = "num_map", com_range = "com_range", fr_communication = "fr_communication", fct_reward = "fct_reward", fct_communication = "fct_communication", use_old_info = "use_old_info", mean_cell_viewed = "mean_cell_viewed", mean_robots_saw = "mean_robots_saw", mean_cell_viewed_continuesly = "mean_cell_viewed_continuesly")
+    res_df = DataFrame(num_map = "num_map", com_range = "com_range", fr_communication = "fr_communication", fct_reward = "fct_reward", fct_communication = "fct_communication", filtering_info = "filtering_info", mean_cell_viewed = "mean_cell_viewed", mean_robots_saw = "mean_robots_saw", mean_cell_viewed_continuesly = "mean_cell_viewed_continuesly")
     CSV.write(res_file, res_df, delim = ";", header = false)
         
     parameters = df_param[parameters_lines,:]
-    parameters = parameters[:, ["num_map", "extent1", "extent2", "com_range", "fr_communication", "fct_reward", "fct_communication", "use_old_info"]]
+    parameters = parameters[:, ["num_map", "extent1", "extent2", "com_range", "fr_communication", "fct_reward", "fct_communication", "filtering_info"]]
 
     # mean_robots_saw = MMatrix{extent[1],extent[2]}(Float64.(zeros(Float64, extent))) #moyenne nombre de robots qui a vu chaque cellule
     # mean_cell_viewed = MMatrix{extent[1],extent[2]}(Float64.(zeros(Float64, extent))) #moyenne nombre fois ou une cellule a ete vue
@@ -204,7 +204,7 @@ function stats_map_random(parameters_lines::Vector)
     mean_cell_viewed_continuesly = zeros(length(parameters_lines))
 
     for param in eachrow(parameters)
-        resultats = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.use_old_info .== param.use_old_info),:]
+        resultats = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.filtering_info .== param.filtering_info),:]
         extent = (param[:extent1], param[:extent2])
         for i in 1:5:nrow(resultats)
             cov_maps = [unpack_gridmap(resultats[i+l,:cov], extent) for l in 0:nb_robots-1]
@@ -230,7 +230,7 @@ function stats_map_random(parameters_lines::Vector)
             mean_robots_saw[rownumber(param)] += nb_robots*tmp_robots/((extent[1]*extent[2] - nb_cell_invisible)*nrow(resultats))
         end
 
-        path = "./Logs/Dec/n_iterations=500,num_map=$(param.num_map),com_range=$(param.com_range),fr_communication=$(param.fr_communication),fct_reward=$(param.fct_reward),fct_communication=$(param.fct_communication),use_old_info=$(Bool(param.use_old_info))/"
+        path = "./Logs/Dec/n_iterations=500,num_map=$(param.num_map),com_range=$(param.com_range),fr_communication=$(param.fr_communication),fct_reward=$(param.fct_reward),fct_communication=$(param.fct_communication),filtering_info=$(Bool(param.filtering_info))/"
         files = filter(endswith("csv"), readdir(path))
         for file in files
             maps_continues = gridmap_continue(path*file, nb_robots)
@@ -254,7 +254,7 @@ function stats_map_random(parameters_lines::Vector)
             mean_cell_viewed_continuesly[rownumber(param)] += tmp_cells_continue/((extent[1]*extent[2] - nb_cell_invisible)*length(files))
         end
 
-        one_res_df =  DataFrame(num_map = param.num_map, com_range = param.com_range, fr_communication = param.fr_communication, fct_reward = param.fct_reward, fct_communication = param.fct_communication, use_old_info = param.use_old_info, mean_cell_viewed = mean_cell_viewed[rownumber(param)], mean_robots_saw = mean_robots_saw[rownumber(param)], mean_cell_viewed_continuesly = mean_cell_viewed_continuesly[rownumber(param)])    
+        one_res_df =  DataFrame(num_map = param.num_map, com_range = param.com_range, fr_communication = param.fr_communication, fct_reward = param.fct_reward, fct_communication = param.fct_communication, filtering_info = param.filtering_info, mean_cell_viewed = mean_cell_viewed[rownumber(param)], mean_robots_saw = mean_robots_saw[rownumber(param)], mean_cell_viewed_continuesly = mean_cell_viewed_continuesly[rownumber(param)])    
 
         CSV.write(res_file, one_res_df, header=false, delim = ";", append = true)
     end
@@ -270,11 +270,11 @@ function stats_map_fixe(parameters_lines::Vector)
     nb_robots=5
         
     res_file = "stats_maps_fixe.csv"
-    res_df = DataFrame(num_map = "num_map", com_range = "com_range", fr_communication = "fr_communication", fct_reward = "fct_reward", fct_communication = "fct_communication", use_old_info = "use_old_info", mean_cell_viewed = "mean_cell_viewed", mean_robots_saw = "mean_robots_saw", mean_cell_viewed_continuesly = "mean_cell_viewed_continuesly")
+    res_df = DataFrame(num_map = "num_map", com_range = "com_range", fr_communication = "fr_communication", fct_reward = "fct_reward", fct_communication = "fct_communication", filtering_info = "filtering_info", mean_cell_viewed = "mean_cell_viewed", mean_robots_saw = "mean_robots_saw", mean_cell_viewed_continuesly = "mean_cell_viewed_continuesly")
     CSV.write(res_file, res_df, delim = ";", header = false)
 
     parameters = df_param[parameters_lines,:]
-    parameters = parameters[:, ["num_map", "extent1", "extent2", "com_range", "fr_communication", "fct_reward", "fct_communication", "use_old_info"]]
+    parameters = parameters[:, ["num_map", "extent1", "extent2", "com_range", "fr_communication", "fct_reward", "fct_communication", "filtering_info"]]
 
     extent = (parameters[1,:extent1], parameters[1,:extent2])
 
@@ -283,7 +283,7 @@ function stats_map_fixe(parameters_lines::Vector)
     mean_cell_viewed_continuesly = [MMatrix{param[:extent1],param[:extent2]}(Float64.(zeros(Float64, (param[:extent1], param[:extent2])))) for param in eachrow(parameters)] #moyenne nombre fois ou une cellule a ete vue en continue
 
     for param in eachrow(parameters)
-        resultats = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.use_old_info .== param.use_old_info),:]
+        resultats = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.filtering_info .== param.filtering_info),:]
         extent = (param[:extent1], param[:extent2])
         for i in 1:5:nrow(resultats)
             cov_maps = [unpack_gridmap(resultats[i+l,:cov], extent) for l in 0:nb_robots-1]
@@ -300,7 +300,7 @@ function stats_map_fixe(parameters_lines::Vector)
                 end
             end
         end
-        path = "./Logs/Dec/n_iterations=500,num_map=$(param.num_map),com_range=$(param.com_range),fr_communication=$(param.fr_communication),fct_reward=$(param.fct_reward),fct_communication=$(param.fct_communication),use_old_info=$(Bool(param.use_old_info))/"
+        path = "./Logs/Dec/n_iterations=500,num_map=$(param.num_map),com_range=$(param.com_range),fr_communication=$(param.fr_communication),fct_reward=$(param.fct_reward),fct_communication=$(param.fct_communication),filtering_info=$(Bool(param.filtering_info))/"
         files = filter(endswith("csv"), readdir(path))
         for file in files
             maps_continues = gridmap_continue(path*file, nb_robots)
@@ -313,7 +313,7 @@ function stats_map_fixe(parameters_lines::Vector)
             end
         end
 
-        one_res_df =  DataFrame(num_map = param.num_map, com_range = param.com_range, fr_communication = param.fr_communication, fct_reward = param.fct_reward, fct_communication = param.fct_communication, use_old_info = param.use_old_info, mean_cell_viewed = [mean_cell_viewed[rownumber(param)]], mean_robots_saw = [mean_robots_saw[rownumber(param)]], mean_cell_viewed_continuesly = [mean_cell_viewed_continuesly[rownumber(param)]])    
+        one_res_df =  DataFrame(num_map = param.num_map, com_range = param.com_range, fr_communication = param.fr_communication, fct_reward = param.fct_reward, fct_communication = param.fct_communication, filtering_info = param.filtering_info, mean_cell_viewed = [mean_cell_viewed[rownumber(param)]], mean_robots_saw = [mean_robots_saw[rownumber(param)]], mean_cell_viewed_continuesly = [mean_cell_viewed_continuesly[rownumber(param)]])    
 
         CSV.write(res_file, one_res_df, header=false, delim = ";", append = true)
 
@@ -390,7 +390,7 @@ function stats()
 
 
     for param in eachrow(df_param[1:17,:])
-        res = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.use_old_info .== param.use_old_info),:]
+        res = df[(df.num_map .== param.num_map) .&& (df.com_range .== param.com_range) .&& (df.fr_communication .== param.fr_communication) .&& (df.fct_reward .== param.fct_reward) .&& (df.fct_communication .== param.fct_communication) .&& (df.filtering_info .== param.filtering_info),:]
         row = rownumber(param)
 
         df_res[row,:mean_cov] = zeros(param[:extent1],param[:extent2])

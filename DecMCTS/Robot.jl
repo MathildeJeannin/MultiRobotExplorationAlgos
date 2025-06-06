@@ -25,7 +25,7 @@ function initialize_model(
     invisible_cells = [0],
     nb_blocs = 0,
     fct_reward = simple_reward,
-    use_old_info=false
+    filtering_info=true
 )
 
     gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
@@ -89,15 +89,15 @@ function initialize_model(
         robots_states = MVector{nb_robots, RobotState}([robots_plans[i].state for i in 1:nb_robots])
         state = StateDec(id, robots_states, gridmap_n, known_cells, seen_cells, 0)
 
-        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, fct_reward, use_old_info, depth)
+        mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, fct_reward, filtering_info, depth)
 
-        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
-        # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = frontier_rollout)
+        # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
+        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = frontier_rollout)
 
         
         planner = solve(solver, mdp)
 
-        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), false, Set(), [], 1, [], ActionDec((0.0,0.0))), state, planner, 0)
+        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), false, Set(), [], 1, [], ActionDec((0.0,0.0))), state, planner, 0, ActionDec((0.0,0.0)))
         add_agent!(agent, pos[n], model)
     end
 
@@ -119,7 +119,8 @@ function agents_simulate!(robot, model, alpha, beta;
     nb_sequence = 3,
     fct_proba = compute_q,
     fct_sequence = state_best_average_action, 
-    fr_communication = 1,
+    # fr_communication = 1,
+    distribution_communication = SparseCat([true,false], [1.0,0.0]),
     fct_communication = simple_communication!
     )
     extent = size(model[1].state.gridmap)
@@ -129,32 +130,41 @@ function agents_simulate!(robot, model, alpha, beta;
         function bloc_mcts()
             robot.rollout_parameters.timestamp_rollout = robot.state.step
             push!(robot.rollout_parameters.breakpoint,0)
-            try 
+            # try 
                 action_info(robot.planner, robot.state)
-            catch e
-            end
+            # catch e
+            # end
             # println("breakpoints =    $(robot.rollout_parameters.breakpoint[end])")
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
             update_distribution!(robot, alpha, beta)
         end
 
-        if fr_communication >= 1
-            for i in 1:fr_communication
-                in_range = nearby_robots(robot, model, robot.com_range)
-                for r in in_range
-                    fct_communication(robot,r)
-                end
-                bloc_mcts()
-            end
-        else
+        # if fr_communication >= 1
+        #     for i in 1:fr_communication
+        #         in_range = nearby_robots(robot, model, robot.com_range)
+        #         for r in in_range
+        #             fct_communication(robot,r)
+        #         end
+        #         bloc_mcts()
+        #     end
+        # else
+        #     in_range = nearby_robots(robot, model, robot.com_range)
+        #     for r in in_range
+        #         if robot.state.step - robot.plans[r.id].timestamp >= 1/fr_communication
+        #             fct_communication(robot,r)
+        #         end
+        #     end
+        #     bloc_mcts()
+        # end
+
+        if rand(distribution_communication)
             in_range = nearby_robots(robot, model, robot.com_range)
             for r in in_range
-                if robot.state.step - robot.plans[r.id].timestamp >= 1/fr_communication
-                    fct_communication(robot,r)
-                end
+                fct_communication(robot,r)
             end
-            bloc_mcts()
         end
+        bloc_mcts()
+
     end
 end
 
@@ -170,6 +180,8 @@ function agent_step!(robot, model, vis_tree)
         else
             a = rand(robot.planner.mdp.possible_actions)
         end
+
+        robot.last_action = a
         
         neighbours = collect(nearby_robots(robot, model, robot.vis_range))
         robots_pos = repeat([(0,0)], outer = nb_robots)

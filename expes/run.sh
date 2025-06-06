@@ -41,8 +41,8 @@ mkdir ./expes/Logs
 
 
 n=0
-ni=1
-nj=1
+ni=5
+nj=4
 start=1
 
 # mkdir Resultats/Dec

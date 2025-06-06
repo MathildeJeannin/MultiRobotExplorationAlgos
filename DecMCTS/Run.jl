@@ -14,7 +14,7 @@ include("../src/Utils.jl")
 global wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(; 
-    alpha_state = 1.0, 
+    alpha_state = 2.0, 
     k_state = 1.0, 
     alpha_action = 1.0,
     k_action = 1.0,
@@ -38,12 +38,13 @@ function run(;
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
-    fr_communication = 1,
+    # fr_communication = 1,
+    proba_communication = 1.0,
     alpha = 0.01,
     file = "",
     begin_zone = (5,5),
     fct_reward = simple_reward,
-    use_old_info = true,
+    filtering_info = false,
     fct_communication = simple_communication!,
     id_expe = 0
     )
@@ -94,7 +95,7 @@ function run(;
         invisible_cells = invisible_cells,
         nb_blocs = nb_blocs, 
         fct_reward = fct_reward,
-        use_old_info = use_old_info
+        filtering_info = filtering_info
     )
 
     robots = [model[i] for i in 1:nb_robots]
@@ -126,12 +127,14 @@ function run(;
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
+    distribution_communication = SparseCat([true, false], [proba_communication, 1-proba_communication])
+
     while (max_knowledge < (extent[1]*extent[2]) - abmproperties(model).invisible_cells[1]) && (nb_steps < max_steps)
 
         nb_steps += 1
         
         @threads for robot in robots 
-            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, fr_communication = fr_communication, fct_communication = simple_communication!)
+            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, distribution_communication = distribution_communication, fct_communication = simple_communication!)
         end
 
         for robot in robots
@@ -170,7 +173,7 @@ function run(;
             fct_proba = fct_proba,
             fct_sequence = fct_sequence,
             nb_sequence = nb_sequence,
-            fr_communication = fr_communication,
+            proba_communication = proba_communication,
             alpha = alpha
             )
         end
@@ -228,7 +231,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
-    fr_communication = 1,
+    proba_communication = 1.0,
     alpha = 0.01
     )
     nb_robots = length(model[1].plans)
@@ -268,7 +271,13 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
             euclidean_distances[robot_prime.id, robot.id] = euclidean_distances[robot.id, robot_prime.id]
         end
 
-        df = innerjoin(df, DataFrame("nb_steps" => robots[1].state.step, "percent_of_map_$(robot.id)" => percent_of_map[robot.id], "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]], "seen_gridmap_$(robot.id)" => [abmproperties(model).seen_all_gridmap[robot.id][:,:]]), on = "nb_steps")
+        rewards = Tuple{ActionDec, Float64}[]
+        a_indexes = robot.planner.tree.children[1]
+        for a_index in a_indexes
+            push!(rewards,(robot.planner.tree.a_labels[a_index], robot.planner.tree.q[a_index]))
+        end
+
+        df = innerjoin(df, DataFrame("nb_steps" => robots[1].state.step, "percent_of_map_$(robot.id)" => percent_of_map[robot.id], "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]], "seen_gridmap_$(robot.id)" => [abmproperties(model).seen_all_gridmap[robot.id][:,:]], "gridmap_$(robot.id)" => [robot.state.gridmap], "rewards_$(robot.id)" => [rewards], "action_$(robot.id)" => robot.last_action), on = "nb_steps")
         
     end
 
