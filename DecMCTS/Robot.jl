@@ -130,10 +130,10 @@ function agents_simulate!(robot, model, alpha, beta;
         function bloc_mcts()
             robot.rollout_parameters.timestamp_rollout = robot.state.step
             push!(robot.rollout_parameters.breakpoint,0)
-            # try 
+            try 
                 action_info(robot.planner, robot.state)
-            # catch e
-            # end
+            catch e
+            end
             # println("breakpoints =    $(robot.rollout_parameters.breakpoint[end])")
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
             update_distribution!(robot, alpha, beta)

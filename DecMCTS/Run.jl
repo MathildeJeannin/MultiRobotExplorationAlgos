@@ -14,11 +14,11 @@ include("../src/Utils.jl")
 global wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(; 
-    alpha_state = 1.0, 
+    alpha_state = 0.5, 
     k_state = 1.0, 
     alpha_action = 1.0,
     k_action = 1.0,
-    exploration_constant = 1/2, 
+    exploration_constant = 0.5, 
     n_iterations = 500, 
     keep_tree = false, 
     discount = 0.85, 
