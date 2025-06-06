@@ -157,13 +157,24 @@ function agents_simulate!(robot, model, alpha, beta;
         #     bloc_mcts()
         # end
 
-        if rand(distribution_communication)
-            in_range = nearby_robots(robot, model, robot.com_range)
-            for r in in_range
-                fct_communication(robot,r)
+        for i in 1:10
+
+            if i == 1
+                robot.planner.solver.keep_tree = false
+            else
+                robot.planner.solver.keep_tree = true
             end
+
+            if rand(distribution_communication)
+                in_range = nearby_robots(robot, model, robot.com_range)
+                for r in in_range
+                    fct_communication(robot,r)
+                end
+            end
+            bloc_mcts()
         end
-        bloc_mcts()
+
+
 
     end
 end

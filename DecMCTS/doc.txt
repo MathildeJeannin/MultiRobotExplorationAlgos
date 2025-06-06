@@ -215,5 +215,5 @@ Centralised Simulateur
     a_labels[i] = donne le nom a de la i-eme action
     a_lookup[a] = donne l'indice i de l'action a 
 
-    n_a_children[?] ??
+    n_a_children[i] = nombre d'enfants de l'action d'index i
     unique_transitions[?] ?? 

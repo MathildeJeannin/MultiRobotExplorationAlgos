@@ -97,11 +97,12 @@ function sigmoid_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
     plans = robot.rollout_parameters.robots_plans
     for state in sp.robots_states
         if state.id != robot.id 
-            d = distance(sp.robots_states[robot.id].pos, state.pos)
+            # d = distance(sp.robots_states[robot.id].pos, state.pos)
+            d = AStarDistance(sp, sp.robots_states[s.id].pos, state.pos)
             push!(Q,f(d)/(length(plans)-1))
         end
     end
-    return r+maximum(Q)
+    return r+maximum(Q)/2
 end
 
 
@@ -116,15 +117,21 @@ function gaussian_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
     Q = []
     for i in eachindex(length(sp.robots_states))
-        d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
+        # d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
+        d = AStarDistance(sp, sp.robots_states[s.id].pos, sp.robots_states[i].pos)
         push!(Q,f(d)/(f(mu)*(length(sp.robots_states)-1)))
     end
-    return r+maximum(Q)
+    return r+maximum(Q)/(1+f(mu))
 end
 
 
 function simple_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
-    return sp.seen_cells - s.seen_cells 
+    # return sp.seen_cells - s.seen_cells 
+    if (sp.seen_cells - s.seen_cells) > 0
+        return 1
+    else
+        return 0
+    end
 end
 
 
@@ -190,6 +197,14 @@ function nouvelle_route(rollout_parameters::RolloutInfo, s::StateDec)
     astar_results = astar(astar_neighbours, start, goal)
     route = astar_results.path[2:end]
     return route
+end
+
+
+function AStarDistance(s::StateDec, pos1::Tuple, pos2::Tuple)
+    start = AStarState(pos1, s.gridmap)
+    goal = AStarState(pos2, s.gridmap)
+    astar_results = astar(astar_neighbours, start, goal)
+    return length(astar_results.path)
 end
 
 

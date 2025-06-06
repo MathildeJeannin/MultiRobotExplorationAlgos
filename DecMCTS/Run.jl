@@ -14,11 +14,11 @@ include("../src/Utils.jl")
 global wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(; 
-    alpha_state = 2.0, 
+    alpha_state = 1.0, 
     k_state = 1.0, 
     alpha_action = 1.0,
     k_action = 1.0,
-    exploration_constant = 20.0, 
+    exploration_constant = 1/2, 
     n_iterations = 500, 
     keep_tree = false, 
     discount = 0.85, 
@@ -100,10 +100,11 @@ function run(;
 
     robots = [model[i] for i in 1:nb_robots]
 
-    observ_map = Array{Observable}(undef, nb_robots)
-    observ_pos_list = Vector{Vector{Observable}}(undef,nb_robots)
-    observ_traj_list = [Observable([Point2f(0.5,0.5)]) for i in 1:nb_robots]
+    
     if vis_figure
+        observ_map = Array{Observable}(undef, nb_robots)
+        observ_pos_list = Vector{Vector{Observable}}(undef,nb_robots)
+        observ_traj_list = [Observable([Point2f(0.5,0.5)]) for i in 1:nb_robots]
         for (i,r) in enumerate(robots)
             id = r.id
             observ_pos_list[id] = Vector{Observable}(undef, nb_robots)
