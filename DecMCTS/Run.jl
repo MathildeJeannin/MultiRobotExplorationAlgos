@@ -19,7 +19,7 @@ function run(;
     alpha_action = 1.0,
     k_action = 1.0,
     exploration_constant = 0.5, 
-    n_iterations = 500, 
+    n_iterations = 20, 
     keep_tree = false, 
     discount = 0.85, 
     nb_obstacles = [0], 
@@ -288,4 +288,20 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     end
     CSV.write(file*"$(id_expe).csv", df, delim = ';', header = write_header, append=true)
 
+end
+
+
+function save_states(nb_robots::Int, file::String)
+    df = DataFrame("ids" => [i for i in 1:nb_robots])
+    df[!, "pos"] =  [model[i].pos for i in 1:nb_robots]
+    df[!, "gridmap"] =  [model[i].state.gridmap for i in 1:nb_robots]
+    df[!, "robots_states"] = [model[i].state.robots_states for i in 1:nb_robots]
+    df[!, "known_cells"] =  [model[i].state.known_cells for i in 1:nb_robots]
+    df[!, "seen_cells"] =  [model[i].state.seen_cells for i in 1:nb_robots]
+    for j in 1:nb_robots
+        df[!, "sequences_of_$j"] = [model[i].plans[j].best_sequences for i in 1:nb_robots]
+        df[!, "assigned_proba_of_$j"] = [model[i].plans[j].assigned_proba for i in 1:nb_robots]
+        df[!, "timestamp_of_$j"] = [model[i].plans[j].timestamp for i in 1:nb_robots]
+    end
+    CSV.write("$(file).csv", df, delim=";", header = true, append=true)
 end

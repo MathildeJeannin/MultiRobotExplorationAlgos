@@ -102,7 +102,7 @@ function sigmoid_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
             push!(Q,f(d)/(length(plans)-1))
         end
     end
-    return r+maximum(Q)/2
+    return (r+maximum(Q))/2
 end
 
 
@@ -121,17 +121,17 @@ function gaussian_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
         d = AStarDistance(sp, sp.robots_states[s.id].pos, sp.robots_states[i].pos)
         push!(Q,f(d)/(f(mu)*(length(sp.robots_states)-1)))
     end
-    return r+maximum(Q)/(1+f(mu))
+    return (r+maximum(Q))/(1+f(mu))
 end
 
 
 function simple_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
-    # return sp.seen_cells - s.seen_cells 
-    if (sp.seen_cells - s.seen_cells) > 0
-        return 1
-    else
-        return 0
-    end
+    return (sp.seen_cells - s.seen_cells)/8 
+    # if (sp.seen_cells - s.seen_cells) > 0
+    #     return 1
+    # else
+    #     return 0
+    # end
 end
 
 
