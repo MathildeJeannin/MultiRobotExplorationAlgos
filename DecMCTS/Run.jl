@@ -132,6 +132,8 @@ function run(;
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
+    distribution_communication = SparseCat([true, false], [proba_communication, 1-proba_communication])
+
     while (max_knowledge < (extent[1]*extent[2]) - abmproperties(model).invisible_cells[1]) && (nb_steps < max_steps)
         nb_steps += 1
         
