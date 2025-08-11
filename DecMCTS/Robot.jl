@@ -26,7 +26,8 @@ function initialize_model(
     nb_blocs = 0,
     fct_reward = simple_reward,
     filtering_info = true, 
-    rollout = "frontiers" 
+    rollout = "frontiers",
+    proba_simu_map = 0.2 
 )
 
     gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
@@ -98,7 +99,7 @@ function initialize_model(
 
         planner = solve(solver, mdp)
 
-        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), false, Set(), [], 1, [], ActionDec((0.0,0.0))), state, planner, 0, ActionDec((0.0,0.0)))
+        agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), false, Set(), [], 1, [], ActionDec((0.0,0.0)), proba_simu_map), state, planner, 0, ActionDec((0.0,0.0)))
         add_agent!(agent, pos[n], model)
     end
 
@@ -130,10 +131,10 @@ function agents_simulate!(robot, model, alpha, beta;
         function bloc_mcts()
             robot.rollout_parameters.timestamp_rollout = robot.state.step
             push!(robot.rollout_parameters.breakpoint,0)
-            try 
+            # try 
                 action_info(robot.planner, robot.state)
-            catch e
-            end
+            # catch e
+            # end
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
             robot.plans[robot.id].timestamp = robot.state.step
             update_distribution!(robot, alpha, beta)

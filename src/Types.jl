@@ -66,6 +66,7 @@ mutable struct RolloutInfo
     length_route::Int
     breakpoint::Vector{Int}
     last_best_action::ActionDec
+    proba_simu_map::Float64
 end
 
 

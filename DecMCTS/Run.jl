@@ -46,7 +46,8 @@ function run(;
     fct_reward = simple_reward,
     filtering_info = false,
     fct_communication = simple_communication!,
-    id_expe = 0
+    id_expe = 0,
+    proba_simu_map = 0.2
     )
 
     if typeof(fct_communication) == String
@@ -99,7 +100,8 @@ function run(;
         nb_blocs = nb_blocs, 
         fct_reward = fct_reward,
         filtering_info = filtering_info,
-        rollout = rollout
+        rollout = rollout,
+        proba_simu_map = proba_simu_map
     )
 
     robots = [model[i] for i in 1:nb_robots]

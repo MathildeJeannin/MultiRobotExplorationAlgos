@@ -46,12 +46,23 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
 
         next_robots_states[robot.id] = RobotState(robot.id, next_pos)
 
+        distribution_simu_map = SparseCat([true, false], [rollout_parameters.proba_simu_map,1-rollout_parameters.proba_simu_map])
+
         # #TODO : a enlever apres test rollout sur carte connue 
-        # obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
+        obstacle_pos = [element.pos for element in nearby_obstacles(next_pos, model, robot.vis_range)]
+        n = length(obstacle_pos)
+        nb_del = 0
+        for k in 1:n
+            if !rand(distribution_simu_map)
+                deleteat!(obstacle_pos, k-nb_del)
+                nb_del += 1
+            end
+        end
+
         # # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
         ##
 
-        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
+        next_known_cells, next_seen_cells = gridmap_update!(next_gridmap, s.known_cells, robot.id, [rs.pos for rs in next_robots_states], m.vis_range, obstacle_pos, model, transition = true, distribution = distribution, seen_cells = s.seen_cells)
 
 
         for plan in rollout_parameters.robots_plans
@@ -66,13 +77,21 @@ function POMDPs.transition(m::RobotMDP, s::StateDec, a::ActionDec)
                 next_robot_pos, obstacle_pos = compute_new_pos(next_gridmap, plan.state.id, [rs.pos for rs in next_robots_states], 1, action.direction)
 
                 # #TODO : a enlever apres test rollout sur carte connue 
-                # obstacle_pos = [element.pos for element in nearby_obstacles(next_robot_pos, model, robot.vis_range)]
+                obstacle_pos = [element.pos for element in nearby_obstacles(next_robot_pos, model, robot.vis_range)]
+                n = length(obstacle_pos)
+                nb_del = 0
+                for k in 1:n
+                    if !rand(distribution_simu_map)
+                        deleteat!(obstacle_pos, k-nb_del)
+                        nb_del += 1
+                    end
+                end
                 # # penser a remettre [obstacle_pos] au lieu de obstacle_pos dans l'appel a gridmap_update
                 ##
 
                 next_robots_states[plan.state.id] = RobotState(plan.state.id, next_robot_pos)
 
-                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
+                next_known_cells, _ = gridmap_update!(next_gridmap, next_known_cells, plan.state.id, [rs.pos for rs in next_robots_states], m.vis_range, obstacle_pos, model, transition = true, distribution = distribution)
             end
         end
 
@@ -97,7 +116,6 @@ function sigmoid_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
     plans = robot.rollout_parameters.robots_plans
     for state in sp.robots_states
         if state.id != robot.id 
-            # d = distance(sp.robots_states[robot.id].pos, state.pos)
             d = AStarDistance(sp, sp.robots_states[s.id].pos, state.pos)
             push!(Q,f(d)/(length(plans)-1))
         end
@@ -117,7 +135,6 @@ function gaussian_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
     Q = []
     for i in eachindex(length(sp.robots_states))
-        # d = distance(sp.robots_states[robot.id].pos, sp.robots_states[i].pos)
         d = AStarDistance(sp, sp.robots_states[s.id].pos, sp.robots_states[i].pos)
         push!(Q,f(d)/(f(mu)*(length(sp.robots_states)-1)))
     end
@@ -126,12 +143,7 @@ end
 
 
 function simple_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
-    return (sp.seen_cells - s.seen_cells)/8 
-    # if (sp.seen_cells - s.seen_cells) > 0
-    #     return 1
-    # else
-    #     return 0
-    # end
+    return (sp.seen_cells - s.seen_cells)/8
 end
 
 
