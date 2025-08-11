@@ -25,7 +25,8 @@ function initialize_model(
     invisible_cells = [0],
     nb_blocs = 0,
     fct_reward = simple_reward,
-    filtering_info=true
+    filtering_info = true, 
+    rollout = "frontiers" 
 )
 
     gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
@@ -74,8 +75,6 @@ function initialize_model(
         end
     end
 
-    # depth = maximum([depth,maximum(extent)*5])
-
     for n in 1:nb_robots
         id = n
         obstacles_pos = [element.pos for element in nearby_obstacles(pos[n], model, vis_range)]
@@ -91,10 +90,12 @@ function initialize_model(
 
         mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, fct_reward, filtering_info, depth)
 
-        # solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
-        solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = frontier_rollout)
+        if rollout == "random_walk"
+            solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
+        elseif rollout == "frontiers"
+            solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = true, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, estimate_value = frontier_rollout)
+        end
 
-        
         planner = solve(solver, mdp)
 
         agent = RobotDec{D}(id, pos[n], vis_range, com_range, [RobotPlan(RobotState(i, (1,1)), Vector{MutableLinkedList{ActionDec}}(undef, 0), Float64[], 0) for i in 1:nb_robots], RolloutInfo(0, deepcopy(robots_plans), false, Set(), [], 1, [], ActionDec((0.0,0.0))), state, planner, 0, ActionDec((0.0,0.0)))
@@ -119,9 +120,8 @@ function agents_simulate!(robot, model, alpha, beta;
     nb_sequence = 3,
     fct_proba = compute_q,
     fct_sequence = state_best_average_action, 
-    # fr_communication = 1,
     distribution_communication = SparseCat([true,false], [1.0,0.0]),
-    fct_communication = simple_communication!
+    fct_communication = transitive_communication!
     )
     extent = size(model[1].state.gridmap)
 
@@ -134,31 +134,12 @@ function agents_simulate!(robot, model, alpha, beta;
                 action_info(robot.planner, robot.state)
             catch e
             end
-            # println("breakpoints =    $(robot.rollout_parameters.breakpoint[end])")
             robot.plans[robot.id].best_sequences, robot.plans[robot.id].assigned_proba = select_sequences(robot, nb_sequence, false, fct_proba, fct_sequence)
+            robot.plans[robot.id].timestamp = robot.state.step
             update_distribution!(robot, alpha, beta)
         end
 
-        # if fr_communication >= 1
-        #     for i in 1:fr_communication
-        #         in_range = nearby_robots(robot, model, robot.com_range)
-        #         for r in in_range
-        #             fct_communication(robot,r)
-        #         end
-        #         bloc_mcts()
-        #     end
-        # else
-        #     in_range = nearby_robots(robot, model, robot.com_range)
-        #     for r in in_range
-        #         if robot.state.step - robot.plans[r.id].timestamp >= 1/fr_communication
-        #             fct_communication(robot,r)
-        #         end
-        #     end
-        #     bloc_mcts()
-        # end
-
         for i in 1:10
-
             if i == 1
                 robot.planner.solver.keep_tree = false
             else

@@ -27,7 +27,7 @@ function run(;
     extent = (40,40),
     vis_figure = false,
     vis_tree = false,
-    depth = 0,
+    depth = 100,
     max_time = 60.0, 
     show_progress = false,
     max_steps = 500,
@@ -38,8 +38,8 @@ function run(;
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
-    # fr_communication = 1,
     proba_communication = 1.0,
+    rollout = "frontiers",
     alpha = 0.01,
     file = "",
     begin_zone = (5,5),
@@ -49,6 +49,9 @@ function run(;
     id_expe = 0
     )
 
+    if typeof(fct_communication) == String
+        fct_communication = getfield(Main, Symbol(fct_communication))
+    end
     if typeof(fct_proba) == String
         fct_proba = getfield(Main, Symbol(fct_proba))
     end
@@ -95,7 +98,8 @@ function run(;
         invisible_cells = invisible_cells,
         nb_blocs = nb_blocs, 
         fct_reward = fct_reward,
-        filtering_info = filtering_info
+        filtering_info = filtering_info,
+        rollout = rollout
     )
 
     robots = [model[i] for i in 1:nb_robots]
@@ -135,7 +139,7 @@ function run(;
         nb_steps += 1
         
         @threads for robot in robots 
-            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, distribution_communication = distribution_communication, fct_communication = simple_communication!)
+            agents_simulate!(robot, model, alpha, 1-(nb_steps-1)/(extent[1]*extent[2]); fct_proba = fct_proba, fct_sequence = fct_sequence, nb_sequence = nb_sequence, distribution_communication = distribution_communication, fct_communication = fct_communication)
         end
 
         for robot in robots

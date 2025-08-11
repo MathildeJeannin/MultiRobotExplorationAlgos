@@ -64,16 +64,9 @@ end
 
 
 function transitive_communication!(r1::RobotDec, r2::RobotDec)
-    # r1.plans[r2.id].state = RobotState(r2.id, r2.pos)
-    # r1.rollout_parameters.robots_plans[r2.id].state = deepcopy(r1.plans[r2.id].state)
-    # r1.state.robots_states[r2.id] = deepcopy(r1.plans[r2.id].state)
-    # r1.plans[r2.id].best_sequences, r1.plans[r2.id].assigned_proba = r2.plans[r2.id].best_sequences, r2.plans[r2.id].assigned_proba
-
-    # r1.plans[r2.id].timestamp = r1.state.step
-
     for p in r2.plans
         if p.state.id != r2.id && p.timestamp > r1.plans[p.state.id].timestamp
-            r1.plans[p.state.id].best_sequences, r1.plans[p.state.id].assigned_proba, r1.plans[p.state.id].timestamp = p.best_sequences, p.assigned_proba, r1.p.timestamp
+            r1.plans[p.state.id].best_sequences, r1.plans[p.state.id].assigned_proba, r1.plans[p.state.id].timestamp = p.best_sequences, p.assigned_proba, p.timestamp
 
             r1.plans[p.state.id].state = RobotState(p.state.id, p.state.pos)
             r1.rollout_parameters.robots_plans[p.state.id].state = deepcopy(r1.plans[p.state.id].state)
@@ -81,7 +74,6 @@ function transitive_communication!(r1::RobotDec, r2::RobotDec)
         end
     end
     simple_communication!(r1,r2)
-    # merge_gridmaps!(r1,r2)
 end
 
 
