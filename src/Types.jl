@@ -121,6 +121,7 @@ mutable struct Node
     wall_x::Tuple
     wall_y::Tuple
     horizontal::Bool
+    priority::Int
 end
 
 

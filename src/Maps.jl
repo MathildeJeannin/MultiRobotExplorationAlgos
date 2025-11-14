@@ -103,7 +103,7 @@ end
 
 
 function generate_random_indoor_map(extent::Tuple, min_room::Int64, max_room::Int64)
-    root = Node((1,extent[1]),(1,extent[2]), rand(false:true))
+    root = Node((1,extent[1]),(1,extent[2]), rand(false:true), extent[1]*extent[2])
     queue = [root]
     nb_rooms = rand(min_room:max_room)
 
@@ -114,8 +114,7 @@ function generate_random_indoor_map(extent::Tuple, min_room::Int64, max_room::In
 
     while count <= nb_rooms && attempts < 500 && !isempty(queue)
 
-        current_room = queue[1]
-        deleteat!(queue, 1)
+        current_room = pick_node_with_priority(queue)
 
         horizontal = !current_room.horizontal
         horizontal ? (range_min, range_max) = current_room.wall_x : (range_min, range_max) = current_room.wall_y
@@ -134,6 +133,22 @@ function generate_random_indoor_map(extent::Tuple, min_room::Int64, max_room::In
 
     end
     return walls
+end
+
+
+function pick_node_with_priority(queue::Vector{Node})
+    index_max = 1
+    node_max = queue[index_max]
+    prio_max = node_max.priority
+    for (i,node) in enumerate(queue)
+        if node.priority > prio_max
+            prio_max = node.priority
+            node_max = node
+            index_max = i
+        end
+    end
+    deleteat!(queue, index_max)
+    return node_max
 end
 
 
@@ -194,7 +209,7 @@ function create_nodes_from_corners(corners::Vector, wall_range::Tuple, horizonta
     n = length(corners)
     nodes = Node[]
     for i in 2:n
-        horizontal ? new_node = Node((corners[i-1], corners[i]), wall_range, horizontal) : new_node = Node(wall_range, (corners[i-1], corners[i]), horizontal)
+        horizontal ? new_node = Node((corners[i-1], corners[i]), wall_range, horizontal, (corners[i]-corners[i-1]+1)*(wall_range[2]-wall_range[1]+1)) : new_node = Node(wall_range, (corners[i-1], corners[i]), horizontal, (corners[i]-corners[i-1]+1)*(wall_range[2]-wall_range[1]+1))
         push!(nodes, new_node)
     end
     return nodes
