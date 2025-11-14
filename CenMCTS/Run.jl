@@ -35,11 +35,12 @@ function run(;
     file = "",
     nb_blocs = 0,
     begin_zone = (5,5),
-    reward_function = all_move_reward
+    reward_function = simple_reward,
+    seed = rand(1:10^39), 
+    rollout = "frontiers"
     )
 
     vis_range = 3
-    log = []
     invisible_cells = [0]
     if num_map > 0 
         f = open("./src/maps/map$num_map.txt", "r")
@@ -57,7 +58,7 @@ function run(;
         extent = extent,               # size of the world
         vis_range = vis_range,       # visibility range
         com_range = com_range,       # communication range
-        seed = rand(1:10^39), 
+        seed = seed, 
         nb_obstacles = nb_obstacles, 
         invisible_cells = invisible_cells,
         num_map = num_map,
@@ -75,7 +76,8 @@ function run(;
         max_steps = max_steps,
         nb_blocs = nb_blocs,
         begin_zone = begin_zone,
-        reward_function = all_move_reward
+        reward_function = reward_function,
+        rollout = rollout
     )
 
     robots = [model[i] for i in 1:nb_robots]
@@ -113,6 +115,8 @@ function run(;
                 observ_traj_list[id][] = push!(observ_traj_list[id][], Point2f(rob.pos))
             end
         end
+
+        _print_gridmap(gridmap, state.robots_states)
         
         vis_figure ? observ_map[] = Matrix(gridmap) : nothing
         if id_expe > 0 && file != ""

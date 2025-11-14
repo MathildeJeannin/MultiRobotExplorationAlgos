@@ -13,7 +13,7 @@ end
 
 
 function gridmap_update!(gridmap::MMatrix, known_cells::Int64, id::Int, robots_pos::Union{Vector,SizedVector}, vis_range::Int, obstacles_pos::Vector, model::StandardABM; seen_cells = -1, transition = false, distribution = nothing)
-
+    #obstacles_pos = empty vector or only one obstacle, in case of finding an obstacle at the move step (juste before gridmap update) that kept the robot fron moving. Possible only in the case of simulating anonther robot in the mcts rollouts, when a simulated neighboor robot is in an unknown area from the computing robot point of view + possible if the rollouts simulate a random environment, then the rollout may place ostacles in the way of the robot, especially if the robot jumps from place to place instead of 1 step at a time.      
     pos = robots_pos[id]
     other_robots_pos = robots_pos[1:end .!= id, :]
 
@@ -224,6 +224,27 @@ function _print_gridmap(gridmap, states)
                 print("o ")
             elseif gridmap[i,j] == 0
                 print("_ ")
+            end
+            if i == extent[1]
+                println()
+            end
+        end
+    end
+    println("\n")
+end
+
+function _print_frontwave(field)
+    println()
+    extent = size(field)
+    for j in extent[2]:-1:1
+        for i in 1:extent[1]
+            if field[i,j] == -1
+                print(".. ")
+            elseif field[i,j] >= 0
+                print("$(field[i,j]) ")
+                if field[i,j] < 10
+                    print(" ")
+                end
             end
             if i == extent[1]
                 println()

@@ -45,11 +45,15 @@ function initialize_model(
 
     #obstacles
     if num_map == 0
-        add_obstacles(model, nb_robots; N = nb_obstacles, extent = extent)
+        add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
-    else 
+    elseif num_map == -1
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
+    elseif num_map == -2
+        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 6, 12)
+    else
+        add_map(model, num_map, nb_robots)
     end
 
     pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
@@ -74,7 +78,7 @@ function initialize_model(
         walkmap = BitArray{2}(trues(extent))
         pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap)
 
-        robot = RobotPosMin{D}(id, pos[n], vis_range, com_range, gridmap_n, pos, pathfinder, [], Set(), 1)
+        robot = RobotPosMin{D}(id, pos[n], vis_range, com_range, gridmap_n, pos, pathfinder, [], Set())
         add_agent!(robot, pos[n], model)
         
     end
@@ -107,23 +111,22 @@ function initialize_model(
 end
 
 
-function agent_step!(robot, model,step,fr_communication)
+function agent_step!(
+    robot, 
+    model,
+    distribution_communication = SparseCat([true,false], [1.0,0.0]))
+
     extent = size(robot.gridmap)
     nb_robots = abmproperties(model).nb_robots
 
-    if step - robot.last_comm <= fr_communication
+    if rand(distribution_communication)
         in_range = nearby_robots(robot, model, robot.com_range)
         for r in in_range
             exchange_positions!(robot, r)
             merge_gridmaps!(robot,r)
             exchange_frontiers!(robot,r)
         end
-        robot.last_comm = step
     end
-
-    # for pos in robot.all_robots_pos
-    #     robot.pathfinder.walkmap[pos[1],pos[2]] = true
-    # end
 
     scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
     

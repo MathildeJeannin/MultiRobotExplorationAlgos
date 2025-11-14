@@ -23,7 +23,8 @@ function run(;
     id_expe = 0,
     nb_blocs = 3,
     file = "",
-    begin_zone = (5,5)
+    begin_zone = (5,5),
+    proba_communication = 1-(0.8^10)
     )
 
     vis_range = 3
@@ -80,11 +81,13 @@ function run(;
     end
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=walkmap) # pathfinder pour calculer les distances entre les robots dans les metriques
     
+    distribution_communication = SparseCat([true, false], [proba_communication, 1-proba_communication])
+
     while (max_knowledge != (extent[1]*extent[2]-abmproperties(model).invisible_cells[1])) && (nb_steps < max_steps)
         nb_steps += 1
 
         for robot in robots
-            agent_step!(robot, model,nb_steps,1)
+            agent_step!(robot, model, distribution_communication)
 
             if vis_figure
                 for i in 1:nb_robots
@@ -99,6 +102,7 @@ function run(;
 
         if show_progress
             println("Step $nb_steps")
+            _print_gridmap(robots[1].gridmap, robots)
         end
         max_knowledge = maximum([count(x -> x != -2, r.gridmap) for r in robots])
 
@@ -113,7 +117,7 @@ function run(;
             )
         end
 
-    end        
+    end       
     return nb_steps
 end
 

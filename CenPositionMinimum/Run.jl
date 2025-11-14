@@ -12,7 +12,7 @@ include("PositionMinimum.jl")
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(;
-    nb_obstacles = [0], 
+    nb_obstacles = 0, 
     nb_robots = 3,
     extent = (20,20),
     vis_figure = false,
@@ -21,7 +21,7 @@ function run(;
     num_map = 2,
     com_range = 10,
     id_expe = 0,
-    nb_blocs = 3,
+    nb_blocs = 7,
     file = "",
     begin_zone = (5,5)
     )
@@ -81,6 +81,7 @@ function run(;
 
         if show_progress
             println("Step $nb_steps")
+            _print_gridmap(memory.gridmap, [model[i] for i in 1:5])
         end
 
         robots = [model[i] for i in 1:nb_robots]

@@ -1,6 +1,6 @@
 function add_map(model, map, nb_robots)
     D = 2
-    f = open("./src/maps/map$map.txt", "r")
+    f = open("./src/maps/random_indoor/maps/map$map.txt", "r")
     id = nb_robots+1
     extent_str = readline(f)
     extent_str_tuple = split(extent_str, ";")
@@ -83,6 +83,140 @@ function is_valid_position(model, extent, x, y, width, height)
     return true
 end
 
+
+function create_random_indoor_map(model, extent, nb_robots, min_room, max_room)
+    walls = generate_random_indoor_map(extent, min_room, max_room)
+    i = 1
+    for w in walls
+        id = nb_robots + i
+        agent = Obstacle{2}(id, w)
+        add_agent!(agent, w, model)
+        i+=1
+    end
+    return length(walls)
+end
+
+
+# function save_random_indoor_map(extent, min_room, max_room)
+#     walls = generate_random_indoor_map(extent, min_room, max_room)
+#     f = 
+
+
+function generate_random_indoor_map(extent::Tuple, min_room::Int64, max_room::Int64)
+    root = Node((1,extent[1]),(1,extent[2]), rand(false:true))
+    queue = [root]
+    nb_rooms = rand(min_room:max_room)
+
+    count = 1
+    attempts = 0
+
+    walls = Set()
+
+    while count <= nb_rooms && attempts < 500 && !isempty(queue)
+
+        current_room = queue[1]
+        deleteat!(queue, 1)
+
+        horizontal = !current_room.horizontal
+        horizontal ? (range_min, range_max) = current_room.wall_x : (range_min, range_max) = current_room.wall_y
+        horizontal ? wall_range = current_room.wall_y : wall_range = current_room.wall_x
+        corners = draw_corners(range_min, range_max)
+
+        if corners != -1
+            add_walls!(walls, corners, wall_range, horizontal) #
+            nodes = create_nodes_from_corners(corners, wall_range, horizontal)
+            for node in nodes
+                push!(queue, node)
+                count+=1
+            end
+        end
+        attempts += 1
+
+    end
+    return walls
+end
+
+
+function draw_corners(range_min::Int, range_max::Int)
+    max_rooms_possible = Int64(floor((range_max-range_min)/6))
+    if max_rooms_possible <= 1
+        return -1
+    end
+    nb_rooms = rand(2:min(3,max_rooms_possible))
+    corners = []
+    while !is_valid_corners(corners, nb_rooms)
+        corners = [range_min]
+        for r in 1:nb_rooms-1
+            c = rand(range_min:range_max)
+            push!(corners, c)
+        end
+        push!(corners, range_max)
+        sort!(corners)
+    end
+    return corners
+end
+
+
+function is_valid_corners(corners::Vector, nb_rooms::Int)
+    if length(corners) != nb_rooms+1
+        return false
+    end
+    for i in 2:nb_rooms+1
+        if corners[i] - corners[i-1] < 4
+            return false
+        end
+    end
+    return true
+end
+      
+
+function add_walls!(walls::Set, corners::Vector, wall_range::Tuple, horizontal::Bool)
+    n = length(corners)
+    for i in 2:n-1 # corners inclut debut et fin donc mur qui existe deja
+        door = add_door(wall_range)
+        for pos in wall_range[1]:wall_range[2]
+            if pos ∉ door
+                horizontal ? push!(walls, (corners[i], pos)) : push!(walls, (pos, corners[i]))
+            end
+        end
+    end
+end
+
+
+
+function add_door(wall_range)
+    D = rand(wall_range[1]+1:wall_range[2]-1)
+    return [D-1,D,D+1]
+end
+
+
+function create_nodes_from_corners(corners::Vector, wall_range::Tuple, horizontal::Bool)
+    n = length(corners)
+    nodes = Node[]
+    for i in 2:n
+        horizontal ? new_node = Node((corners[i-1], corners[i]), wall_range, horizontal) : new_node = Node(wall_range, (corners[i-1], corners[i]), horizontal)
+        push!(nodes, new_node)
+    end
+    return nodes
+end
+    
+
+function _set_to_gridmap(walls::Set, extent::Tuple)
+    gridmap = MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent)))
+    for cell in walls
+        if cell[1] > 0 && cell[1] < extent[1]+1 && cell[2] > 0 && cell[2] < extent[2]+1 
+            gridmap[cell[1],cell[2]] = -1
+        end
+    end
+    return gridmap
+end
+
+
+function _test_generation_random_map(extent::Tuple, min_room::Int64, max_room::Int64)
+    walls = generate_random_indoor_map(extent, min_room, max_room)
+    gridmap = _set_to_gridmap(walls, extent)
+    _print_gridmap(gridmap, [])
+end
 
 
 function create_map(size)

@@ -43,7 +43,7 @@ end
 
 
 function simple_reward(m::RobotMDP, s::StateCen, a::ActionCen, sp::StateCen)
-    return (count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap))
+    return ((count(x->x==-2, s.gridmap) - count(x->x==-2, sp.gridmap)))/(8*length(s.robots_states))
 end
 
 
@@ -68,6 +68,81 @@ end
 
 function POMDPs.isterminal(m::RobotMDP, s::StateCen)
     return count(i->i==-2, s.gridmap) == 0 
+end
+
+
+function frontier_rollout(m::RobotMDP, s::StateCen, d::Int)
+    rollout_parameters = abmproperties(model).rollout_parameters
+    
+    nb_robots = length(s.robots_states)
+    r = 0
+    a = ActionCen([ActionDec((0.0,0.0)) for i in 1:nb_robots])
+
+    for (i,r_state) in enumerate(s.robots_states)
+
+        if isempty(rollout_parameters.route[i]) || !rollout_parameters.in_rollout
+            rollout_parameters.in_rollout = true
+            rollout_parameters.route[i] = nouvelle_route(rollout_parameters, r_state.pos, s.gridmap)
+            if isempty(rollout_parameters.route[i])
+                a.directions_vector[i] = ActionDec((0.0,0.0))
+                break
+            end
+        end
+
+        if distance(rollout_parameters.route[i][1].pos, r_state.pos) > 1 || distance(rollout_parameters.route[i][1].pos, r_state.pos) == 0 # l'appel à transition précédent n'a pas pu bouger le robot car obstacle ou voisin, il est donc resté immobile ou probleme avec 1ere action
+            rollout_parameters.route[i] = nouvelle_route(rollout_parameters, r_state.pos, gridmap)
+            if isempty(rollout_parameters.route[i])
+                a.directions_vector[i] = ActionDec((0.0,0.0))
+                break
+            end
+        end
+
+        
+        next_astar_state = popfirst!(rollout_parameters.route[i])
+
+        next_pos = next_astar_state.pos
+        direction = (next_pos .- r_state.pos)./distance(next_pos, r_state.pos)
+        a.directions_vector[i] = ActionDec((round(direction[1], digits=2), round(direction[2], digits=2)))
+    end
+
+    sp, r = @gen(:sp, :r)(m, s, a, planner.rng)
+
+    if d > 0 && !isterminal(m, sp)
+        return r + m.discount*frontier_rollout(m, sp, d-1)
+    else
+        return r
+    end
+end
+
+
+
+function nouvelle_route(rollout_parameters::RolloutInfo, pos::Tuple, gridmap::MMatrix)
+    rollout_parameters.frontiers = frontierDetectionMCTS(gridmap, rollout_parameters.frontiers, need_repartition=false)
+    if isempty(rollout_parameters.frontiers) 
+        return []
+    end
+
+    #TODO : a enlever apres test sur carte connue
+    # s_carte_connue = deepcopy(s)
+    # add_walls_to_gridmap!(s_carte_connue.gridmap, abmproperties(model).num_map)
+    # ##
+
+    start = AStarState(pos, gridmap)
+    # goal_cell = goToFrontier(rand(rollout_parameters.frontiers), s.robots_states[s.id].pos, s.gridmap)
+    goal_cell = rand(rollout_parameters.frontiers)
+    goal = AStarState(goal_cell, gridmap)
+
+    astar_results = astar(astar_neighbours, start, goal)
+    route = astar_results.path[2:end]
+    return route
+end
+
+
+function AStarDistance(gridmap::MMatrix, pos1::Tuple, pos2::Tuple)
+    start = AStarState(pos1, gridmap)
+    goal = AStarState(pos2, gridmap)
+    astar_results = astar(astar_neighbours, start, goal)
+    return length(astar_results.path)
 end
 
 

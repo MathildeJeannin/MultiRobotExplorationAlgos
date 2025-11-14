@@ -33,7 +33,7 @@ function frontierDetection(id::Int, pos::Tuple, vis_range::Int, gridmap::MMatrix
         end
     end
     if need_repartition
-        return frontiers, frontierRepartition(gridmap, frontiers)
+        return frontiers, frontierRepartition(frontiers)
     else
         return frontiers
     end
@@ -56,7 +56,7 @@ function frontierDetectionMCTS(gridmap::MMatrix, frontiers::Set; need_repartitio
         end
     end
     if need_repartition
-        return frontiers, frontierRepartition(gridmap, frontiers)
+        return frontiers, frontierRepartition(frontiers)
     else
         return frontiers
     end
@@ -86,7 +86,7 @@ function isFrontier(f::Tuple, gridmap::MMatrix)
 end
 
 
-function frontierRepartition(gridmap::MMatrix, frontier_cells::Set) # = BFS
+function frontierRepartition(frontier_cells::Set) # = BFS
     graph = buildGraph(frontier_cells)
     frontiers = []
     visited = Set()

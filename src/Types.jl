@@ -62,10 +62,10 @@ mutable struct RolloutInfo
     robots_plans::MVector
     in_rollout::Bool
     frontiers::Set
-    route::Vector{AStarState}
-    length_route::Int
+    route::Vector
+    length_route::Vector{Int}
     breakpoint::Vector{Int}
-    last_best_action::ActionDec
+    last_best_action::Union{ActionDec,ActionCen}
     proba_simu_map::Float64
 end
 
@@ -107,7 +107,6 @@ mutable struct RobotPosMin{D} <: AbstractAgent
     pathfinder::Any
     plan::Vector
     frontiers::Set
-    last_comm::Int64
 end
 
 mutable struct SharedMemory
@@ -115,6 +114,13 @@ mutable struct SharedMemory
     frontiers::Set
     plan::Vector{Vector{Tuple}}
     pathfinder::Any
+end
+
+
+mutable struct Node
+    wall_x::Tuple
+    wall_y::Tuple
+    horizontal::Bool
 end
 
 

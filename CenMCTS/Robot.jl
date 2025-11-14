@@ -25,7 +25,8 @@ function initialize_model(;
     show_progress = false,
     max_steps = 500,
     nb_blocs = 0,
-    reward_function = all_move_reward
+    reward_function = all_move_reward, 
+    rollout = "frontiers"
 )
 
     # initialize model
@@ -44,7 +45,7 @@ function initialize_model(;
     frontiers = Set()
     actions_sequence = Vector{ActionCen}(undef, 0)
     #TODO enlever frontieres de rollout info
-    rollout_parameters = RolloutInfo(1, MVector{0,Nothing}())
+    rollout_parameters = RolloutInfo(0, MVector{0,Nothing}(), false, Set(), [[] for i in 1:nb_robots], [], [], ActionCen([ActionDec((0.0,0.0)) for i in 1:nb_robots]), 0.0)
 
     properties = (
         seen_all_gridmap = MVector{nb_robots, MMatrix}(MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent))) for i in 1:nb_robots),
@@ -60,12 +61,16 @@ function initialize_model(;
         properties = properties
     )
 
-    if num_map > 0
-        add_map(model, num_map, nb_robots)
-    elseif num_map < 0
-        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
-    else
+    if num_map == 0
         add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
+    elseif num_map > 0
+        add_map(model, num_map, nb_robots)
+    elseif num_map == -1
+        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
+    elseif num_map == -2
+        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 6, 12)
+    else
+        add_map(model, num_map, nb_robots)
     end
 
     robots_states = Vector{RobotState}(undef, nb_robots)
@@ -91,11 +96,15 @@ function initialize_model(;
 
     possible_actions = compute_actions_cenMCTS(nb_robots)
 
-    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, reward_function, true)
-
     depth = maximum([depth,maximum(extent)*5])
+    mdp = RobotMDP(vis_range, nb_obstacles[1], discount, possible_actions, reward_function, true, depth)
 
-    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_Q=special_Q, init_N=special_N, estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1))
+    if rollout == "frontiers"
+        estimate_value = frontier_rollout
+    else 
+        estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1)
+    end
+    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_Q=special_Q, init_N=special_N, estimate_value = estimate_value)
 
     global planner = solve(solver, mdp)
 
@@ -114,6 +123,8 @@ function agent_step!(model, gridmap, planner, state, visualisation)
     vis_range = robots[1].vis_range
     abmproperties(model).rollout_parameters.timestamp_rollout = state.step
 
+    println("MCTS ...")
+    abmproperties(model).rollout_parameters.in_rollout = false
     global a,info = action_info(planner, state)
 
     if visualisation

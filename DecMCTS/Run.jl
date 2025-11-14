@@ -310,3 +310,5 @@ function save_states(nb_robots::Int, file::String)
     end
     CSV.write("$(file).csv", df, delim=";", header = true, append=true)
 end
+
+# step = run(proba_simu_map = 1.0, nb_robots=5, n_iterations=10, num_map=4, depth = 100, max_steps=500, fct_communication=simple_communication!, filtering_info=false, proba_communication=0.2, com_range=10, exploration_constant=0.5, alpha_state=0.5, rollout = "frontiers", show_progress = true)

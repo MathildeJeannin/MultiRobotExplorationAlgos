@@ -33,7 +33,7 @@ N = parse(Int64, ARGS[25])
 
 t0 = now()
 
-folder = "./expes/Logs/Dec/num_map=$(num_map),extent=$(extent1),nb_blocs=$(nb_blocs),rollout=$(rollout),alpha_state=$(alpha_state),exploration_constant=$(exploration_constant),reward=$(fct_reward),n_iterations=$(n_iterations),communication_range=$(com_range),proba_communication=$(proba_communication),data_relaying=$(fct_communication),filtering_info=$(filtering_info),proba_simu_map=$(proba_simu_map)/"
+folder = "./expes/Logs/Dec/num_map=$(num_map),proba_simu_map=$(proba_simu_map)/"
 
 
 file = folder*"$(N)_$(t0).csv"

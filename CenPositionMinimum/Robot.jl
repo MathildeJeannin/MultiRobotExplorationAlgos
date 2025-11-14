@@ -45,8 +45,12 @@ function initialize_model(
         add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
     elseif num_map > 0
         add_map(model, num_map, nb_robots)
-    else 
+    elseif num_map == -1
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
+    elseif num_map == -2
+        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 6, 12)
+    else
+        add_map(model, num_map, nb_robots)
     end
 
     pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
@@ -72,9 +76,9 @@ function initialize_model(
 
         gridmap_update!(memory.gridmap, 0, robot.id, all_robots_pos, robot.vis_range, obstacles_pos, model)
 
-        memory.frontiers, all_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, memory.gridmap, all_robots_pos,  memory.frontiers; need_repartition=true)
+        memory.frontiers, dispatched_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, memory.gridmap, all_robots_pos,  memory.frontiers; need_repartition=true)
 
-        goal = positionMinimum(all_frontiers, memory.gridmap, all_robots_pos[Not(robot.id)], robot.pos)
+        goal = positionMinimum(dispatched_frontiers, memory.gridmap, all_robots_pos[Not(robot.id)], robot.pos)
         memory.plan[robot.id] = collect(plan_route!(robot, goal, pathfinder))
     end
 
@@ -92,7 +96,6 @@ function agent_step!(model)
     pathfinder = Agents.Pathfinding.AStar(abmspace(model), walkmap=memory.pathfinder.walkmap)
     
     for robot in robots
-        scan = collect(nearby_positions(robot.pos, model, robot.vis_range))
         
         if !isempty(memory.plan[robot.id]) && !isempty(memory.plan[robot.id][1])
             action = (memory.plan[robot.id][1][1]-robot.pos[1], memory.plan[robot.id][1][2]-robot.pos[2])./distance(memory.plan[robot.id][1], robot.pos)
@@ -117,8 +120,8 @@ function agent_step!(model)
         pathfinder_update!(pathfinder, memory.gridmap)
 
         if count(x->x == -2, memory.gridmap) > abmproperties(model).invisible_cells[1]
-            memory.frontiers, all_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, memory.gridmap, all_robots_pos, memory.frontiers; need_repartition=true)
-            goal = positionMinimum(all_frontiers, memory.gridmap, all_robots_pos[Not(robot.id)], robot.pos)
+            memory.frontiers, dispatched_frontiers = frontierDetection(robot.id, robot.pos, robot.vis_range, memory.gridmap, all_robots_pos, memory.frontiers; need_repartition=true)
+            goal = positionMinimum(dispatched_frontiers, memory.gridmap, all_robots_pos[Not(robot.id)], robot.pos)
             memory.plan[robot.id] = collect(plan_route!(robot, goal, pathfinder))
         end
     end
