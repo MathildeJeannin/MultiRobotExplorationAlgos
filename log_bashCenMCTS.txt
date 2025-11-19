@@ -1,3 +1,2 @@
-Creating 2 simu, n = 0
 Finished 2 simu, n = 2
 Creating 2 simu, n = 2
