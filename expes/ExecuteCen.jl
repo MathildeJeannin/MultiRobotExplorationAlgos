@@ -30,25 +30,20 @@ folder = "/num_map=$num_map,extent=$extent1/"
 file = folder*"$(N)_$(t0).csv"
 
 
-
-try
-    mkdir("Resultats/Cen"*folder)
-catch e
-end
 try
     mkdir("Logs/Cen"*folder)
 catch e
 end
 
 
-nb_steps, cov = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, file="Logs/Cen"*folder, id_expe=N, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=(begin_zone,begin_zone))
+nb_steps = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, file="Logs/Cen"*folder, id_expe=N, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=(begin_zone,begin_zone))
 
-df = DataFrame(alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=begin_zone, nb_steps = nb_steps, cov=cov)
+# df = DataFrame(alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=begin_zone, nb_steps = nb_steps, cov=cov)
 
-CSV.write("Resultats/Cen"*file, df, writeheader=true, delim = ';', append=true)
+# CSV.write("Resultats/Cen"*file, df, writeheader=true, delim = ';', append=true)
 
 log_file = open("Logs/Cen"*folder*"$N.txt", "a")
-write(log_file, "run $(N); time = $(t0); nb_steps = $(nb_steps), cov = $cov\n")
+write(log_file, "run $(N); time = $(t0); nb_steps = $(nb_steps)\n")
 close(log_file)
 
 

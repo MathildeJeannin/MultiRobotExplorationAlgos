@@ -156,6 +156,7 @@ function run(;
 
             
         end
+        _print_gridmap(model[1].state.gridmap, [model[i] for i in 1:5])
         max_knowledge = maximum([r.state.known_cells for r in robots])
 
         if id_expe!=0 && file != ""

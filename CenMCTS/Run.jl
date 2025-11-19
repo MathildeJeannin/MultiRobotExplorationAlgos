@@ -116,7 +116,7 @@ function run(;
             end
         end
 
-        _print_gridmap(gridmap, state.robots_states)
+        # _print_gridmap(gridmap, state.robots_states)
         
         vis_figure ? observ_map[] = Matrix(gridmap) : nothing
         if id_expe > 0 && file != ""
@@ -172,7 +172,7 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
     euclidean_distances = zeros((length(robots), length(robots)))
     
     percent_of_map[1] = count(x->x!=-2, state.gridmap)/(extent[1]*extent[2]-invisible_cells)
-    df = DataFrame("nbsteps" => state.step, "percentofmapall" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap])
+    df = DataFrame("nbsteps" => state.step, "percent_of_map_all" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap], "positions" => [[r.pos for r in robots]])
 
     for robot in robots
 
@@ -183,7 +183,7 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
             euclidean_distances[robot_prime.id, robot.id] = euclidean_distances[robot.id, robot_prime.id]
         end
 
-        df = innerjoin(df, DataFrame("nbsteps" => state.step, "astardistances$(robot.id)" => [astar_distances[robot.id,:]], "euclideandistances$(robot.id)" =>[euclidean_distances[robot.id,:]]), on = "nbsteps")
+        df = innerjoin(df, DataFrame("nb_steps" => state.step, "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]]), on = "nbsteps")
         
     end
 

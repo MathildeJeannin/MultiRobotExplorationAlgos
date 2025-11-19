@@ -48,7 +48,7 @@ function initialize_model(
     elseif num_map == -1
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     elseif num_map == -2
-        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 6, 12)
+        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 12, 12)
     else
         add_map(model, num_map, nb_robots)
     end

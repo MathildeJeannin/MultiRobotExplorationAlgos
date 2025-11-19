@@ -68,7 +68,7 @@ function initialize_model(;
     elseif num_map == -1
         abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
     elseif num_map == -2
-        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 6, 12)
+        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 12, 12)
     else
         add_map(model, num_map, nb_robots)
     end
@@ -104,7 +104,7 @@ function initialize_model(;
     else 
         estimate_value = RolloutEstimator(RandomSolver(), max_depth=-1)
     end
-    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_Q=special_Q, init_N=special_N, estimate_value = estimate_value)
+    solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_N=special_N, estimate_value = estimate_value)
 
     global planner = solve(solver, mdp)
 
