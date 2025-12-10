@@ -1,6 +1,10 @@
 function add_map(model, map, nb_robots)
     D = 2
-    f = open("./src/maps/random_indoor/maps/map$map.txt", "r")
+    if typeof(map) == Int
+        f = open("./src/maps/map$map.txt", "r")
+    else
+        f = open(map, "r")
+    end
     id = nb_robots+1
     extent_str = readline(f)
     extent_str_tuple = split(extent_str, ";")
@@ -34,12 +38,24 @@ end
 
 
 function add_simple_obstacles(model, extent, nb_robots; N = 1, min_obstacle_size = 4, max_obstacle_size = 7)
+    invisible_cells, nb_obstacles, walls = generate_random_outdoor_map(extent; N=N, min_obstacle_size=min_obstacle_size, max_obstacle_size=max_obstacle_size)
+    ids = nb_robots
+    for cell in walls
+        ids += 1
+        agent = Obstacle{2}(ids, (cell[1],cell[2]))
+        add_agent!(agent, (cell[1],cell[2]), model)
+    end
+    return invisible_cells, nb_obstacles
+end
+
+
+function generate_random_outdoor_map(extent; N = 1, min_obstacle_size = 4, max_obstacle_size = 7)
     count = 0
     attempts = 0
-    ids = nb_robots
-
     invisible_cells = 0 
     nb_obstacles = 0 
+
+    walls = Set()
 
     while count < N && attempts < 100
         attempts += 1
@@ -49,24 +65,35 @@ function add_simple_obstacles(model, extent, nb_robots; N = 1, min_obstacle_size
         x = rand(2:extent[1] - obstacle_width - 1)
         y = rand(2:extent[2] - obstacle_height - 1)
 
-        if is_valid_position(model, extent, x, y, obstacle_width, obstacle_height)
+        if is_valid_position(walls, extent, x, y, obstacle_width, obstacle_height)
             count += 1
             invisible_cells += (obstacle_width - 1)*(obstacle_height - 1)
             for i in x:x+obstacle_width
                 for j in y:y+obstacle_height
-                    ids += 1
-                    agent = Obstacle{2}(ids, (i,j))
-                    add_agent!(agent, (i,j), model)
+                    push!(walls, (i,j))
                     nb_obstacles += 1 
                 end
             end
         end
     end
-    return invisible_cells, nb_obstacles
+    return invisible_cells, nb_obstacles, walls
 end
+
+
+function save_random_outdoor_map(map_index, extent, nb_robots; N = 1, min_obstacle_size = 4, max_obstacle_size = 7)
+    invisible_cells, _ ,walls = generate_random_outdoor_map(extent; N = N, min_obstacle_size = min_obstacle_size, max_obstacle_size = max_obstacle_size)
+    f = open("./src/maps/random_outdoor_maps/map$(map_index).txt", "w")
+    write(f, "$(extent[1]);$(extent[2])\n")
+    write(f, "$(invisible_cells)\n")
+    for cell in walls
+        write(f, "$(cell[1])\t$(cell[2])\n")
+    end
+    close(f)
+end
+
    
 
-function is_valid_position(model, extent, x, y, width, height)
+function is_valid_position(walls, extent, x, y, width, height)
     x_min = max(5, x-1)
     y_min = max(5, y-1)
     x_max = min(extent[1], x + width + 1)
@@ -74,7 +101,7 @@ function is_valid_position(model, extent, x, y, width, height)
 
     for i in x_min:x_max
         for j in y_min:y_max
-            if length(ids_in_position((i,j),model)) > 0
+            if (i,j) ∈ walls 
                 return false
             end
         end
@@ -97,9 +124,17 @@ function create_random_indoor_map(model, extent, nb_robots, min_room, max_room)
 end
 
 
-# function save_random_indoor_map(extent, min_room, max_room)
-#     walls = generate_random_indoor_map(extent, min_room, max_room)
-#     f = 
+function save_random_indoor_map(extent, min_room, max_room, map_index)
+    walls =  generate_random_indoor_map(extent, min_room, max_room)
+    f = open("./src/maps/random_indoor_maps/map$(map_index).txt", "w")
+    write(f, "$(extent[1]);$(extent[2])\n")
+    write(f, "0\n")
+    for cell in walls
+        write(f, "$(cell[1])\t$(cell[2])\n")
+    end
+    close(f)
+end
+
 
 
 function generate_random_indoor_map(extent::Tuple, min_room::Int64, max_room::Int64)
@@ -229,6 +264,12 @@ end
 
 function _test_generation_random_map(extent::Tuple, min_room::Int64, max_room::Int64)
     walls = generate_random_indoor_map(extent, min_room, max_room)
+    gridmap = _set_to_gridmap(walls, extent)
+    _print_gridmap(gridmap, [])
+end
+
+function _test_generation_random_map(extent::Tuple, N::Int64, min_obstacle_size::Int64, max_obstacle_size::Int64)
+    _,_,walls = generate_random_outdoor_map(extent; N = N, min_obstacle_size = min_obstacle_size, max_obstacle_size = max_obstacle_size)
     gridmap = _set_to_gridmap(walls, extent)
     _print_gridmap(gridmap, [])
 end

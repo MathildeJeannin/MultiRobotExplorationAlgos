@@ -156,7 +156,10 @@ function raytracing(A, B, length_AB)
 end
 
 
-function limitScanWithObstacles(id::Int, pos::Tuple, vis_range::Int, all_robots_pos::Union{Vector,SizedVector}, gridmap::MMatrix, scan::Vector)
+function limitScanWithObstacles(id::Int, pos::Tuple, vis_range::Int, all_robots_pos::Union{Vector,SizedVector}, gridmap::MMatrix, scan::Union{Vector,Set})
+    if typeof(scan) == Set{Any}
+        scan = collect(scan)
+    end
     lscan = limit_scan(scan, pos)
     scan_accurate = Set()
     for l in lscan

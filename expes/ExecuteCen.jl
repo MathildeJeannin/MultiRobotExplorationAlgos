@@ -29,6 +29,9 @@ folder = "./expes/Logs/CenMCTS/num_map=$num_map,k_action=$(k_action)/"
 
 file = folder*"$(N)_$(t0).csv"
 
+# if num_map == -2
+#     num_map = "./src/maps/random_indoor_maps/map$(N).txt"
+
 
 try
     mkdir(folder)

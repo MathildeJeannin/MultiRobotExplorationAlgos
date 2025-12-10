@@ -30,7 +30,7 @@ function POMDPs.transition(m::RobotMDP, s::StateCen, a::ActionCen)
 
             _, next_seen[rs.id] = gridmap_update!(next_gridmap, 0, rs.id, all_robots_pos, m.vis_range, [obstacle_pos], model, transition = true, distribution = distribution)
         end      
-
+        
         sp = StateCen(next_gridmap, next_robots_states, next_seen, s.step+1)
         return sp
     end
@@ -78,10 +78,18 @@ function frontier_rollout(m::RobotMDP, s::StateCen, d::Int)
     r = 0
     a = ActionCen([ActionDec((0.0,0.0)) for i in 1:nb_robots])
 
+    computed_frontiers = false
+    for (i,_) in enumerate(s.robots_states)
+        if (isempty(rollout_parameters.route[i]) || !rollout_parameters.in_rollout) && !computed_frontiers
+            rollout_parameters.frontiers = frontierDetectionMCTS(gridmap, rollout_parameters.frontiers, need_repartition=false)
+            rollout_parameters.in_rollout = true
+            computed_frontiers = true
+        end
+    end
+
     for (i,r_state) in enumerate(s.robots_states)
 
-        if isempty(rollout_parameters.route[i]) || !rollout_parameters.in_rollout
-            rollout_parameters.in_rollout = true
+        if  isempty(rollout_parameters.route[i]) || !rollout_parameters.in_rollout
             rollout_parameters.route[i] = nouvelle_route(rollout_parameters, r_state.pos, s.gridmap)
             if isempty(rollout_parameters.route[i])
                 a.directions_vector[i] = ActionDec((0.0,0.0))
@@ -117,7 +125,6 @@ end
 
 
 function nouvelle_route(rollout_parameters::RolloutInfo, pos::Tuple, gridmap::MMatrix)
-    rollout_parameters.frontiers = frontierDetectionMCTS(gridmap, rollout_parameters.frontiers, need_repartition=false)
     if isempty(rollout_parameters.frontiers) 
         return []
     end

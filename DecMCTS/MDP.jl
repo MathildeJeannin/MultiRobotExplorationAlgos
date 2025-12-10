@@ -135,7 +135,7 @@ function gaussian_reward(m::RobotMDP, s::StateDec, a::ActionDec, sp::StateDec)
     f(x) = (1/(sigma*sqrt(2*pi)))*exp(-0.5*((x-mu)/sigma)^2)
     Q = []
     for i in eachindex(length(sp.robots_states))
-        d = AStarDistance(sp, sp.robots_states[s.id].pos, sp.robots_states[i].pos)
+        d = AStarDistance(sp, sp.robots_states[s.id].pos,    sp.robots_states[i].pos)
         push!(Q,f(d)/(f(mu)*(length(sp.robots_states)-1)))
     end
     return (r+maximum(Q))/(1+f(mu))
@@ -192,6 +192,7 @@ end
 
 function nouvelle_route(rollout_parameters::RolloutInfo, s::StateDec)
     rollout_parameters.frontiers = frontierDetectionMCTS(s.gridmap, rollout_parameters.frontiers, need_repartition=false)
+    # rollout_parameters.frontiers = frontierDetection(model[s.id].vis_range, s.gridmap, [rstate.pos for rstate in s.robots_states], rollout_parameters.frontiers, need_repartition=false)
     if isempty(rollout_parameters.frontiers) 
         return []
     end

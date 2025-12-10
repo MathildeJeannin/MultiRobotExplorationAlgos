@@ -39,6 +39,51 @@ function frontierDetection(id::Int, pos::Tuple, vis_range::Int, gridmap::MMatrix
     end
 end
 
+# function frontierDetection(vis_range::Int, gridmap::MMatrix, all_robots_pos::Union{Vector, SizedVector}, frontiers::Set; need_repartition=true)
+#     queue = Set()
+#     scan = Set()
+#     for (id, pos) in enumerate(all_robots_pos)
+#         scan = union(scan, Set(nearby_positions(pos, model, 100)))
+#         lscan = limitScanWithObstacles(id, pos, 100, all_robots_pos, gridmap, scan)
+#         queue = union(queue, union(lscan, filter(in(frontiers), scan)))
+#     end
+#     visited = Tuple{Int,Int}[]
+#     while !isempty(queue)
+#         # x,y = cell = queue[1]
+#         # deleteat!(queue, 1)
+#         x,y = cell = pop!(queue)
+
+#         is_frontier = isFrontier(cell, gridmap)
+#         if gridmap[x,y] == 0 && is_frontier
+#             push!(frontiers, cell)
+#         end
+
+#         if is_frontier || gridmap[x,y] == -1
+#             for (dx,dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), 
+#                 (-1, -1), (-1, 1), (1, -1), (1, 1)]
+#                 nx,ny = a = x+dx,y+dy
+#                 if a ∉ visited && a in scan && gridmap[nx,ny] == 0
+#                     push!(visited, a)
+#                     push!(queue, a)
+#                 end
+#             end
+#         end
+#     end
+   
+#     for f in frontiers
+#         # _, is_frontier = isFrontier(f, gridmap)
+#         is_frontier = isFrontier(f,gridmap)
+#         if !is_frontier
+#             delete!(frontiers, f)
+#         end
+#     end
+#     if need_repartition
+#         return frontiers, frontierRepartition(frontiers)
+#     else
+#         return frontiers
+#     end
+# end
+
 
 function frontierDetectionMCTS(gridmap::MMatrix, frontiers::Set; need_repartition=true)
     extent = size(gridmap)  
@@ -143,4 +188,14 @@ function buildGraph(frontier_cells::Set)
         end
     end
     return graph
+end
+
+
+
+function _frontiers_to_gridmap(frontiers::Set, extent::Tuple)
+    gridmap = MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent)))
+    for element in frontiers
+        gridmap[element[1],element[2]] = -1
+    end
+    return gridmap
 end

@@ -172,7 +172,7 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
     euclidean_distances = zeros((length(robots), length(robots)))
     
     percent_of_map[1] = count(x->x!=-2, state.gridmap)/(extent[1]*extent[2]-invisible_cells)
-    df = DataFrame("nb_steps" => state.step, "percent_of_map_all" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap], "positions" => [[r.pos for r in robots]])
+    df = DataFrame("nb_steps" => state.step, "percent_of_map_all" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap], "gridmap" =>[gridmap],  "positions" => [[r.pos for r in robots]])
 
     for robot in robots
 

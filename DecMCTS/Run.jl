@@ -14,7 +14,7 @@ include("../src/Utils.jl")
 global wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
 
 function run(; 
-    alpha_state = 0.5, 
+    alpha_state = 0.1, 
     k_state = 1.0, 
     alpha_action = 1.0,
     k_action = 1.0,
@@ -38,16 +38,16 @@ function run(;
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,
     nb_sequence = 3,
-    proba_communication = 1.0,
+    proba_communication = 0.2,
     rollout = "frontiers",
     alpha = 0.01,
     file = "",
     begin_zone = (5,5),
     fct_reward = simple_reward,
     filtering_info = false,
-    fct_communication = simple_communication!,
+    fct_communication = transitive_communication!,
     id_expe = 0,
-    proba_simu_map = 0.2
+    proba_simu_map = 0.0
     )
 
     if typeof(fct_communication) == String
@@ -156,7 +156,7 @@ function run(;
 
             
         end
-        _print_gridmap(model[1].state.gridmap, [model[i] for i in 1:5])
+        _print_gridmap(model[1].state.gridmap, [model[i] for i in 1:nb_robots])
         max_knowledge = maximum([r.state.known_cells for r in robots])
 
         if id_expe!=0 && file != ""
