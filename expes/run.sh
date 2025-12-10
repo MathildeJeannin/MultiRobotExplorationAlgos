@@ -1,0 +1,111 @@
+
+#!/bin/bash
+
+mkdir ./expes/Logs
+
+
+
+n=0
+ni=5
+nj=4
+start=1
+
+mkdir ./expes/Logs/DecMCTS
+
+while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 rec_column14 rec_column15 rec_column16 rec_column17 rec_column18 rec_column19 rec_column20 rec_column21 rec_column22 rec_column23 rec_column24
+do
+    for ((i=$start; i<=$ni; i++))
+    do 
+        for ((j=$start; j<=$nj; j++))
+        do  
+            julia -t 10 expes/ExecuteDec.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $rec_column13 $rec_column14 $rec_column15 $rec_column16 $rec_column17 $rec_column18 $rec_column19 $rec_column20 $rec_column21 $rec_column22 $rec_column23 $rec_column24 $((n+j)) &
+        done
+        echo "Creating $nj simu, n = $n" >> log_bashDec.txt
+        wait 
+        n=$((n+nj))
+        echo "Finished $nj simu, n = $n" >> log_bashDec.txt
+    done
+done < <(tail -n +2 expes/parametersDec.csv)
+
+wait
+echo "All done" >> ./expes/log_bashDec.txt
+
+
+n=0
+ni=5
+nj=4
+start=1
+
+mkdir ./expes/Logs/CenPosMin
+
+while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7
+do
+    for ((i=$start; i<=$ni; i++))
+    do 
+        for ((j=$start; j<=$nj; j++))
+        do  
+            julia expes/ExecuteCenPosMin.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $((n+j)) &
+        done
+        echo "Creating $nj simu, n = $n" >> ./expes/log_bashCenPosMin.txt
+        wait 
+        n=$((n+nj))
+        echo "Finished $nj simu, n = $n" >> ./expes/log_bashCenPosMin.txt
+    done
+done < <(tail -n +2 expes/parametersCenPosMin.csv)
+
+wait
+echo "All done" >> ./expes/log_bashCenPosMin.txt
+
+
+
+n=0
+ni=5
+nj=4
+start=1
+
+mkdir ./expes/Logs/DecPosMin
+
+while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7
+do
+    for ((i=$start; i<=$ni; i++))
+    do 
+        for ((j=$start; j<=$nj; j++))
+        do  
+            julia expes/ExecuteDecPosMin.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $((n+j)) &
+        done
+        echo "Creating $nj simu, n = $n" >> ./expes/log_bashDecPosMin.txt
+        wait 
+        n=$((n+nj))
+        echo "Finished $nj simu, n = $n" >> ./expes/log_bashDecPosMin.txt
+    done
+done < <(tail -n +2 expes/parametersDecPosMin.csv)
+
+wait
+echo "All done" >> ./expes/log_bashDecPosMin.txt
+
+
+n=0
+ni=5
+nj=4
+start=1
+
+mkdir ./expes/Logs/CenMCTS
+
+while IFS="," read -r rec_column1 rec_column2 rec_column3 rec_column4 rec_column5 rec_column6 rec_column7 rec_column8 rec_column9 rec_column10 rec_column11 rec_column12 rec_column13 rec_column14 rec_column15 rec_column16
+do
+    for ((i=$start; i<=$ni; i++))
+    do 
+        for ((j=$start; j<=$nj; j++))
+        do  
+            julia expes/ExecuteCen.jl $rec_column1 $rec_column2 $rec_column3 $rec_column4 $rec_column5 $rec_column6 $rec_column7 $rec_column8 $rec_column9 $rec_column10 $rec_column11 $rec_column12 $rec_column13 $rec_column14 $rec_column15 $rec_column16 $((n+j)) &
+        done
+        echo "Creating $nj simu, n = $n" >> ./expes/log_bashCenMCTS.txt
+        wait 
+        n=$((n+nj))
+        echo "Finished $nj simu, n = $n" >> ./expes/log_bashCenMCTS.txt
+    done
+done < <(tail -n +2 expes/parametersCen.csv)
+
+wait
+echo "All done" >> ./expes/log_bashCenMCTS.txt
+
