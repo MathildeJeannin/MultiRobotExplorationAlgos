@@ -5,7 +5,7 @@ function initialize_model(
     nb_robots,
     extent,
     nb_obstacles, 
-    num_map;
+    map_path;
     begin_zone = (5,5), 
     vis_range = 3,
     com_range = 10,
@@ -44,17 +44,8 @@ function initialize_model(
 
 
     #obstacles
-    if num_map == 0
-        add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
-    elseif num_map > 0
-        add_map(model, num_map, nb_robots)
-    elseif num_map == -1
-        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
-    elseif num_map == -2
-        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 12, 12)
-    else
-        add_map(model, num_map, nb_robots)
-    end
+    add_map(model, map_path, nb_robots)
+
 
     pos = Vector{Tuple{Int,Int}}(undef, nb_robots)
     for n ∈ 1:nb_robots

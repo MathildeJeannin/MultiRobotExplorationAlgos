@@ -1,10 +1,6 @@
-function add_map(model, map, nb_robots)
+function add_map(model, map_path, nb_robots)
     D = 2
-    if typeof(map) == Int
-        f = open("./src/maps/map$map.txt", "r")
-    else
-        f = open(map, "r")
-    end
+    f = open(map_path, "r")
     id = nb_robots+1
     extent_str = readline(f)
     extent_str_tuple = split(extent_str, ";")

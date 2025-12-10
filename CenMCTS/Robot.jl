@@ -11,7 +11,7 @@ function initialize_model(;
     nb_obstacles = 0,
     invisible_cells = [0],
     seed = 1,               # random seed
-    num_map = 0,
+    map_path = "./src/maps/map4.txt",
     discount = 0.85,
     n_iterations = 2500,
     depth = 100,
@@ -61,17 +61,7 @@ function initialize_model(;
         properties = properties
     )
 
-    if num_map == 0
-        add_obstacles(model, nb_robots; N = nb_obstacles[1], extent = extent)
-    elseif num_map > 0
-        add_map(model, num_map, nb_robots)
-    elseif num_map == -1
-        abmproperties(model).invisible_cells[1], abmproperties(model).nb_obstacles[1] = add_simple_obstacles(model, extent, nb_robots; N = nb_blocs)
-    elseif num_map == -2
-        abmproperties(model).nb_obstacles[1] = create_random_indoor_map(model, extent, nb_robots, 12, 12)
-    else
-        add_map(model, num_map, nb_robots)
-    end
+    add_map(model, map_path, nb_robots)
 
     robots_states = Vector{RobotState}(undef, nb_robots)
 
@@ -123,7 +113,6 @@ function agent_step!(model, gridmap, planner, state, visualisation)
     vis_range = robots[1].vis_range
     abmproperties(model).rollout_parameters.timestamp_rollout = state.step
 
-    println("MCTS ...")
     abmproperties(model).rollout_parameters.in_rollout = false
     global a,info = action_info(planner, state)
 

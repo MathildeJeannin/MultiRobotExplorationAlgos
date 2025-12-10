@@ -18,7 +18,7 @@ function run(;
     vis_figure = false,
     show_progress = false,
     max_steps = 500,
-    num_map = 2,
+    map_path = "./src/maps/map4.txt",
     com_range = 10,
     id_expe = 0,
     nb_blocs = 7,
@@ -28,22 +28,20 @@ function run(;
 
     vis_range = 3
     invisible_cells = 0
-    if num_map > 0 
-        f = open("./src/maps/map$num_map.txt", "r")
-        line_extent = readline(f)
-        line_invisible_cells = readline(f)
-        close(f)
-        str_extent = split(line_extent, ";")
-        extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = parse(Int64, line_invisible_cells)
-        nb_obstacles = countlines("./src/maps/map$(num_map).txt") - 2
-    end
+    f = open(map_path, "r")
+    line_extent = readline(f)
+    line_invisible_cells = readline(f)
+    close(f)
+    str_extent = split(line_extent, ";")
+    extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
+    invisible_cells = parse(Int64, line_invisible_cells)
+    nb_obstacles = countlines(map_path) - 2
 
     global model = initialize_model(
         nb_robots,
         extent,
         nb_obstacles,
-        num_map;
+        map_path,
         begin_zone = begin_zone,
         vis_range = vis_range,    
         com_range = com_range,
@@ -105,7 +103,7 @@ function run(;
             nb_robots = nb_robots,
             extent = extent,
             max_steps = max_steps,
-            num_map = num_map,
+            map_path = map_path,
             com_range = com_range
             )
         end
@@ -120,7 +118,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     nb_robots = 3,
     extent = (15,15),
     max_steps = 300,
-    num_map = 2,
+    map_path = "./src/maps/map4.txt",
     com_range = 10
     )
     robots = [model[i] for i in 1:nb_robots]
@@ -141,7 +139,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     end
 
     percent_of_map[end] = tmp/(extent[1]*extent[2]-abmproperties(model).nb_obstacles[1])
-    df = DataFrame("nb_steps" => nb_steps, "percent_of_map_all" => percent_of_map[end])
+    df = DataFrame("nb_steps" => nb_steps, "percent_of_map_all" => percent_of_map[end],  "positions" => [[r.pos for r in robots]])
 
     for robot in robots
 
@@ -172,16 +170,3 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
 end
 
 
-
-function execute_one_simu(;file = "", id_expe = 0, nb_robots = 3, num_map = -1, max_steps = 500, extent = (20,20), nb_blocs = 3, begin_zone=(5,5))
-    mkdir("../expes/Resultats/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])")
-
-    mkdir("../expes/Logs/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])")
-
-
-    file = "../expes/Logs/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])/"
-
-    nb_steps,cov = run(max_steps=max_steps, nb_robots=nb_robots, num_map=num_map, extent=extent, nb_blocs=nb_blocs, file=file, id_expe=id_expe)
-    df = DataFrame(nb_robots=nb_robots, max_steps=max_steps, num_map=num_map, begin_zone=begin_zone, nb_steps = nb_steps, cov=cov)
-    CSV.write("../expes/Resultats/CenPositionMinimum/num_map=$(num_map),extent=$(extent[1])/$id_expe.csv", df, writeheader=true, delim = ';', append=true)
-end

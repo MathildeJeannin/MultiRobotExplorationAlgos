@@ -1,0 +1,2 @@
+nb_robots,max_steps,num_map,extent1,extent2,nb_blocs,begin_zone
+5,5,./src/maps/random_indoor_maps/,40,40,8,5

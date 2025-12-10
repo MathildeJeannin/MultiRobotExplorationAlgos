@@ -31,7 +31,7 @@ function run(;
     max_time = 60.0, 
     show_progress = false,
     max_steps = 500,
-    num_map = -1,
+    map_path = "./src/maps/map4.txt",
     nb_blocs = 0,
     com_range = 10,
     vis_range = 3,
@@ -64,22 +64,21 @@ function run(;
     end
 
     invisible_cells = [0]
-    if num_map > 0 
-        f = open("./src/maps/map$num_map.txt", "r")
-        line_extent = readline(f)
-        line_invisible_cells = readline(f)
-        close(f)
-        str_extent = split(line_extent, ";")
-        extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = [parse(Int64, line_invisible_cells)]
-        nb_obstacles = [countlines("./src/maps/map$(num_map).txt") - 2]
-    end
+    f = open(map_path, "r")
+    line_extent = readline(f)
+    line_invisible_cells = readline(f)
+    close(f)
+    str_extent = split(line_extent, ";")
+    extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
+    invisible_cells = [parse(Int64, line_invisible_cells)]
+    nb_obstacles = [countlines(map_path) - 2]
+    
 
     global model = initialize_model(
         nb_robots,
         extent,
         nb_obstacles,
-        num_map,
+        map_path,
         alpha_state, 
         k_state,
         alpha_action,
@@ -156,7 +155,6 @@ function run(;
 
             
         end
-        _print_gridmap(model[1].state.gridmap, [model[i] for i in 1:nb_robots])
         max_knowledge = maximum([r.state.known_cells for r in robots])
 
         if id_expe!=0 && file != ""
@@ -175,7 +173,7 @@ function run(;
             depth = depth,
             max_time = max_time, 
             max_steps = max_steps,
-            num_map = num_map,
+            map_path = map_path,
             com_range = com_range,
             fct_proba = fct_proba,
             fct_sequence = fct_sequence,
@@ -233,7 +231,7 @@ function add_metrics(model::StandardABM, pathfinder::Pathfinding.AStar{2}, file:
     depth = 50,
     max_time = 60.0, 
     max_steps = 300,
-    num_map = 2,
+    map_path = "./src/maps/map4.txt",
     com_range = 10,
     fct_proba = compute_q,
     fct_sequence = state_best_average_action,

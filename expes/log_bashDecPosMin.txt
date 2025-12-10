@@ -1,0 +1,5 @@
+Creating 4 simu, n = 0
+Finished 4 simu, n = 4
+Creating 4 simu, n = 0
+Finished 4 simu, n = 4
+All done

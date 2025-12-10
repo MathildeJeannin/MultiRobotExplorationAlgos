@@ -1,9 +1,5 @@
-alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,num_map,extent1,extent2,nb_blocs,begin_zone
-1,1,1,0.5,20,2500,0,0.85,5,100,500,-1,40,40,5,5
-1,1,1,1,20,2500,0,0.85,5,100,500,-1,40,40,5,5
-1,1,1,2,20,2500,0,0.85,5,100,500,-1,40,40,5,5
-1,1,1,5,20,2500,0,0.85,5,100,500,-1,40,40,5,5
-1,1,1,0.5,20,2500,0,0.85,5,100,500,-2,40,40,0,5
-1,1,1,1,20,2500,0,0.85,5,100,500,-2,40,40,0,5
-1,1,1,2,20,2500,0,0.85,5,100,500,-2,40,40,0,5
-1,1,1,5,20,2500,0,0.85,5,100,500,-2,40,40,0,5
+alpha_state,k_state,alpha_action,k_action,exploration_constant,n_iterations,keep_tree,discount,nb_robots,depth,max_steps,map_path,extent1,extent2,nb_blocs,begin_zone
+1,1,1,0.9,20,2500,0,0.85,5,100,5,./src/maps/random_indoor_maps/,40,40,5,5
+1,1,1,0.9,20,2500,0,0.85,5,100,1,./src/maps/random_outdoor_maps/,40,40,5,5
+1,1,1,0.9,20,2500,0,0.85,5,100,1,./src/maps/first_maps/map4.txt,40,40,5,5
+1,1,1,0.9,20,2500,0,0.85,5,100,1,./src/maps/first_maps/map5.txt,40,40,5,5

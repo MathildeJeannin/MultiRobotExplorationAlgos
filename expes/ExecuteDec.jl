@@ -15,7 +15,7 @@ discount = parse(Float64, ARGS[8])
 nb_robots = parse(Int64, ARGS[9])
 depth = parse(Int64, ARGS[10])
 max_steps = parse(Int64, ARGS[11])
-num_map = parse(Int64, ARGS[12])
+map_path = ARGS[12]
 com_range = parse(Int64, ARGS[13])
 alpha = parse(Float64, ARGS[14])
 extent1 = parse(Int64, ARGS[15])
@@ -33,11 +33,16 @@ N = parse(Int64, ARGS[25])
 
 t0 = now()
 
-folder = "./expes/Logs/Dec/num_map=$(num_map),proba_simu_map=$(proba_simu_map)/"
+splited_path_to_map = split(map_path, "/")
 
+if splited_path_to_map[4] == "first_maps"
+    folder = "./expes/Logs/DecMCTS/type_of_map=$(splited_path_to_map[4]),num_map=$(split(splited_path_to_map[5], ".")[1][4:end])/"
+else
+    folder = "./expes/Logs/DecMCTS/type_of_map=$(splited_path_to_map[4])/"
+    map_path = map_path*"map$(N).txt"
+end
 
 file = folder*"$(N)_$(t0).csv"
-
 
 try
     mkdir(folder)
@@ -45,7 +50,7 @@ catch e
 end
 
 
-nb_steps = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, num_map=num_map, com_range=com_range, alpha=alpha, file=folder, id_expe=N, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=(begin_zone,begin_zone), proba_communication=proba_communication, fct_reward=fct_reward, fct_communication=fct_communication , filtering_info=filtering_info, rollout=rollout, proba_simu_map=proba_simu_map)
+nb_steps = run(vis_tree=false, vis_figure = false, show_progress = false, alpha_state=alpha_state, k_state=k_state, alpha_action=alpha_action, k_action=k_action, exploration_constant=exploration_constant,n_iterations=n_iterations, keep_tree=keep_tree, discount=discount, nb_robots=nb_robots, depth=depth, max_steps=max_steps, map_path=map_path, com_range=com_range, alpha=alpha, file=folder, id_expe=N, extent=(extent1,extent2), nb_blocs=nb_blocs, begin_zone=(begin_zone,begin_zone), proba_communication=proba_communication, fct_reward=fct_reward, fct_communication=fct_communication , filtering_info=filtering_info, rollout=rollout, proba_simu_map=proba_simu_map)
 
 
 log_file = open(folder*"$N.txt", "a")

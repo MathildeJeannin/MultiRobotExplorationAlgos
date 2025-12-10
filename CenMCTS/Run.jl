@@ -28,7 +28,7 @@ function run(;
     max_time = 60.0, 
     show_progress = false,
     max_steps = 500,
-    num_map = -1, 
+    map_path = "./src/maps/map4.txt",
     com_range = 10,
     penalite = false,
     id_expe = 0,
@@ -42,16 +42,15 @@ function run(;
 
     vis_range = 3
     invisible_cells = [0]
-    if num_map > 0 
-        f = open("./src/maps/map$num_map.txt", "r")
-        line_extent = readline(f)
-        line_invisible_cells = readline(f)
-        close(f)
-        str_extent = split(line_extent, ";")
-        extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
-        invisible_cells = [parse(Int64, line_invisible_cells)]
-        nb_obstacles = [countlines("./src/maps/map$(num_map).txt") - 2]
-    end
+    println(map_path)
+    f = open(map_path, "r")
+    line_extent = readline(f)
+    line_invisible_cells = readline(f)
+    close(f)
+    str_extent = split(line_extent, ";")
+    extent = (parse(Int64, str_extent[1]),parse(Int64, str_extent[2]))
+    invisible_cells = [parse(Int64, line_invisible_cells)]
+    nb_obstacles = [countlines(map_path) - 2]
     
     global model, state = initialize_model(;
         nb_robots = nb_robots,                 # number of agents
@@ -61,7 +60,7 @@ function run(;
         seed = seed, 
         nb_obstacles = nb_obstacles, 
         invisible_cells = invisible_cells,
-        num_map = num_map,
+        map_path = map_path,
         discount = discount,
         n_iterations = n_iterations,
         depth = depth,
@@ -135,7 +134,7 @@ function run(;
                 depth = depth,
                 max_time = max_time, 
                 max_steps = max_steps,
-                num_map = num_map,
+                map_path = map_path,
                 invisible_cells = invisible_cells[1]
             )
         end
@@ -161,7 +160,7 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
     depth = 50,
     max_time = 60.0, 
     max_steps = 100,
-    num_map = 2,
+    map_path = "./src/maps/map4.txt",
     invisible_cells = invisible_cells
     )
     robots = [model[i] for i in 1:nb_robots]
