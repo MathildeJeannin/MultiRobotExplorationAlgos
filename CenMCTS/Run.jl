@@ -52,7 +52,7 @@ function run(;
     invisible_cells = [parse(Int64, line_invisible_cells)]
     nb_obstacles = [countlines(map_path) - 2]
     
-    global model, state = initialize_model(;
+    global model, state, planner = initialize_model(;
         nb_robots = nb_robots,                 # number of agents
         extent = extent,               # size of the world
         vis_range = vis_range,       # visibility range
@@ -80,10 +80,10 @@ function run(;
     )
 
     robots = [model[i] for i in 1:nb_robots]
-    gridmap = state.gridmap
+    # gridmap = state.gridmap
 
     if vis_figure
-        observ_map = Observable(Matrix(gridmap))
+        observ_map = Observable(Matrix(state.gridmap))
         observ_pos_list = Array{Observable}(undef,nb_robots)
         observ_traj_list = [Observable([Point2f(0.5,0.5)]) for i in 1:nb_robots]
         for (i,r) in enumerate(robots)
@@ -103,10 +103,12 @@ function run(;
 
     
     nb_steps = 0
-    while (count(i->i!=-2, gridmap) != (extent[1]*extent[2]-invisible_cells[1])) && (nb_steps < max_steps)
+    while (count(i->i!=-2, state.gridmap) != (extent[1]*extent[2]-invisible_cells[1])) && (nb_steps < max_steps)
         nb_steps += 1
-        state = agent_step!(model, gridmap, planner, state, vis_tree)
-        gridmap = state.gridmap
+        state = agent_step!(model, state.gridmap, planner, state, vis_tree)
+        # gridmap = state.gridmap
+        println("gridmap dans run ligne 110")
+        _print_gridmap(state.gridmap, state.robots_states)
         for (j,rob) in enumerate(robots)
             id = rob.id
             if vis_figure
@@ -114,10 +116,8 @@ function run(;
                 observ_traj_list[id][] = push!(observ_traj_list[id][], Point2f(rob.pos))
             end
         end
-
-        # _print_gridmap(gridmap, state.robots_states)
         
-        vis_figure ? observ_map[] = Matrix(gridmap) : nothing
+        vis_figure ? observ_map[] = Matrix(state.gridmap) : nothing
         if id_expe > 0 && file != ""
             add_metrics(model, state, pathfinder, file, id_expe;
                 alpha_state = alpha_state, 
@@ -171,7 +171,7 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
     euclidean_distances = zeros((length(robots), length(robots)))
     
     percent_of_map[1] = count(x->x!=-2, state.gridmap)/(extent[1]*extent[2]-invisible_cells)
-    df = DataFrame("nb_steps" => state.step, "percent_of_map_all" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap], "gridmap" =>[gridmap],  "positions" => [[r.pos for r in robots]])
+    df = DataFrame("nb_steps" => state.step, "percent_of_map_all" => percent_of_map[1], "seen_gridmap" => [abmproperties(model).seen_all_gridmap], "gridmap" =>[state.gridmap],  "positions" => [[r.pos for r in robots]])
 
     for robot in robots
 
@@ -185,6 +185,10 @@ function add_metrics(model::StandardABM, state::StateCen, pathfinder::Pathfindin
         df = innerjoin(df, DataFrame("nb_steps" => state.step, "astar_distances_$(robot.id)" => [astar_distances[robot.id,:]], "euclidean_distances_$(robot.id)" =>[euclidean_distances[robot.id,:]]), on = "nb_steps")
         
     end
+
+
+    println("gridmap dans ajout metrique ligne 190")
+    _print_gridmap(state.gridmap, state.robots_states)
 
     write_header = false
     if  state.step == 1

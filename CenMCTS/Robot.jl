@@ -36,7 +36,7 @@ function initialize_model(;
 
     D = length(extent)
 
-    global gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
+    gridmap = MMatrix{extent[1],extent[2]}(Int64.(-2*ones(Int64, extent)))
     seen_gridmap = MMatrix{extent[1],extent[2]}(Int64.(zeros(Int64, extent)))
 
     T1 = Tuple(i for i in 1:begin_zone[1])
@@ -96,11 +96,11 @@ function initialize_model(;
     end
     solver = DPWSolver(n_iterations = n_iterations, depth = depth, max_time = max_time, keep_tree = keep_tree, show_progress = show_progress, enable_action_pw = true, enable_state_pw = false, tree_in_info = true, alpha_state = alpha_state, k_state = k_state, alpha_action = alpha_action, k_action = k_action, exploration_constant = exploration_constant, init_N=special_N, estimate_value = estimate_value)
 
-    global planner = solve(solver, mdp)
+    planner = solve(solver, mdp)
 
     state = StateCen(gridmap, robots_states, [0,0,0], 0)
 
-    return model, state
+    return model, state, planner
 end
 
 
@@ -114,7 +114,7 @@ function agent_step!(model, gridmap, planner, state, visualisation)
     abmproperties(model).rollout_parameters.timestamp_rollout = state.step
 
     abmproperties(model).rollout_parameters.in_rollout = false
-    global a,info = action_info(planner, state)
+    a,info = action_info(planner, state)
 
     if visualisation
         inchrome(D3Tree(info[:tree], init_expand=4))

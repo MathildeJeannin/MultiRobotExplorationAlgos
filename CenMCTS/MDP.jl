@@ -81,7 +81,7 @@ function frontier_rollout(m::RobotMDP, s::StateCen, d::Int)
     computed_frontiers = false
     for (i,_) in enumerate(s.robots_states)
         if (isempty(rollout_parameters.route[i]) || !rollout_parameters.in_rollout) && !computed_frontiers
-            rollout_parameters.frontiers = frontierDetectionMCTS(gridmap, rollout_parameters.frontiers, need_repartition=false)
+            rollout_parameters.frontiers = frontierDetectionMCTS(s.gridmap, rollout_parameters.frontiers, need_repartition=false)
             rollout_parameters.in_rollout = true
             computed_frontiers = true
         end
@@ -98,7 +98,7 @@ function frontier_rollout(m::RobotMDP, s::StateCen, d::Int)
         end
 
         if distance(rollout_parameters.route[i][1].pos, r_state.pos) > 1 || distance(rollout_parameters.route[i][1].pos, r_state.pos) == 0 # l'appel à transition précédent n'a pas pu bouger le robot car obstacle ou voisin, il est donc resté immobile ou probleme avec 1ere action
-            rollout_parameters.route[i] = nouvelle_route(rollout_parameters, r_state.pos, gridmap)
+            rollout_parameters.route[i] = nouvelle_route(rollout_parameters, r_state.pos, s.gridmap)
             if isempty(rollout_parameters.route[i])
                 a.directions_vector[i] = ActionDec((0.0,0.0))
                 break
